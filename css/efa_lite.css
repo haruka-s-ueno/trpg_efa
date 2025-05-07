@@ -1,0 +1,310 @@
+/* efa_lite.css */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    max-width: 700px;
+    width: 100%;
+    margin: 0 auto;
+    font-size: 14px;
+}
+h1 {
+    color: #2c3e50;
+    border-bottom: 3px solid #34495e;
+    padding-bottom: 5px;
+}
+h2 {
+    color: #34495e;
+    border-bottom: 2px solid #34495e;
+    padding-bottom: 5px;
+}
+h3 {
+    color: #34495e;
+    border-bottom: solid 1px;
+    font-size: 18px;
+    margin-bottom: 0.5em;
+}
+h4 {
+    color: #34495e;
+    border-bottom: solid 1px;
+    font-size: 16px;
+    margin-bottom: 0.5em;
+}
+h5 {
+    color: #34495e;
+    border-bottom: solid 1px;
+    font-size: 14px;
+    margin-bottom: 0.5em;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 5px 0; /* 変更: 10px 0 → 5px 0 */
+}
+th, td {
+    border: 1px solid #bdc3c7;
+    padding: 3px; /* 変更: 6px → 3px */
+    font-size: 14px;
+}
+th {            background-color: #ecf0f1;        }
+td {            height: 12px; /* 変更: 15px → 12px */        }
+p  {
+        text-align: left;
+        margin-top:    0.25em;
+        margin-bottom: 0.25em;
+   }
+ul, ol {
+    margin: 0px 5px;
+    padding-left: 5px;
+}
+li {
+    margin: 0px 5px;
+    padding-left: 0px;
+}
+strong {
+    color: #c00020;
+}
+.note {
+  background-color: #ffffcc;  /* 薄い黄色 */
+  border-left: 4px solid #ffcc00;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  font-style: normal;
+}
+.flavor {
+  font-size: 0.95em;
+  font-family: Georgia, "游明朝", serif;
+  font-style: italic;
+  padding: 0.5em 1em;
+  border-left: 3px solid #aaa;
+  margin: 1em 0;
+  background-color: #f9f9f9;
+}
+.character-sheet { position: relative; }
+.character-sheet-table {
+  line-height: 1.2;
+  padding: 0;
+}
+.illustration-box {
+  top: 0;
+  right: 0;
+  border: 2px dashed #34495e;
+  text-align: center;
+  vertical-align: top;
+  line-height: normal;
+  font-style: italic;
+  color: #7f8c8d;
+  font-size: 10px;
+  padding-top: 5px;
+}
+.basic-info td, th {
+  font-size: 12px;
+  margin: 0px 0;
+}
+.basic-info td {                  margin: 1px 0;      }
+.basic-info th:first-child {      width: 60px;        }
+.basic-info th:nth-child(3) {     width: 45px;        }
+.basic-info td:nth-child(2),
+.basic-info td:nth-child(4) {
+  width: 80px;
+}
+.basic-info td:nth-child(5) {     width: 180px;       }
+.skills-table td, th {            font-size: 12p      }
+.skills-table th:first-child {    width: 80px;        }
+.equipment-table td, th {         font-size: 12px;    }
+.equipment-table {
+  height: 180px; /* 変更: 220px → 180px */
+  display: table;
+}
+.equipment-table th,
+.equipment-table td { vertical-align: top; }
+
+.skill-combat-table th:first-child  { width: 100px; }
+.skill-combat-table th:nth-child(2) { width:  43px; }
+.skill-combat-table th:nth-child(3) { width:  53px; }
+.skill-combat-table th:nth-child(4) { width:  53px; }
+.magic-table th:first-child         { width: 135px; }
+.other-table th {                     font-size: 12px;       }
+.other-table th:first-child {         width: 80px;           }
+.footnote {
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 0.5em;
+}
+
+@media screen and (max-width: 600px) {
+  img {
+    max-width: 180px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  img {
+    max-width: 307px;
+  }
+}
+
+@media print {
+  .section {
+    break-after: always;
+  }
+  .no-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h2, h3, h4 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .character-sheet {
+    break-before: always;
+    break-inside: avoid;
+  }
+  .page-break { page-break-before: always; }
+  
+  #topbar {
+    display: none;
+  }
+}
+.align-table           th               { text-align: center; }
+.align-table-center-1  td:nth-child(1)  { text-align: center; }
+.align-table-center-2  td:nth-child(2)  { text-align: center; }
+.align-table-center-3  td:nth-child(3)  { text-align: center; }
+.align-table-center-4  td:nth-child(4)  { text-align: center; }
+.align-table-center-5  td:nth-child(5)  { text-align: center; }
+.align-table-center-6  td:nth-child(6)  { text-align: center; }
+.align-table-center-7  td:nth-child(7)  { text-align: center; }
+.align-table-center-8  td:nth-child(8)  { text-align: center; }
+.align-table-center-9  td:nth-child(9)  { text-align: center; }
+.align-table-center-10 td:nth-child(10) { text-align: center; }
+.align-table-right-2   td:nth-child(2)  { text-align: right; }
+.align-table-right-3   td:nth-child(3)  { text-align: right; }
+.align-table-right-4   td:nth-child(4)  { text-align: right; }
+.align-table-right-5   td:nth-child(5)  { text-align: right; }
+.center {                             text-align: center;    }
+.left   {                             text-align: left !important; }
+
+.float {
+    float: right;
+    width: 240px;
+    margin: 0px;
+    padding: 0px 0px 5px 5px;
+}
+
+#topbar {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    left: auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    z-index: 1000;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+/* 共通の網掛け ここから */
+.cell-gray { background-color: #f6fafb; }
+/* 共通の網掛け ここまで */
+/*--- 時間帯と明るさ ここから ---*/
+/* 明るさの色分け */
+td.brt { background-color: #FFFFE0; /* 薄黄色：明るい */ }
+td.dim { background-color: #DEC4B0; /* 薄橙  ：薄暗い */ }
+td.drk { background-color: #696969; /* 濃灰色：暗い   */
+        color: #FFFFFF; /* 暗い背景で文字が見えるよう白に */ }
+/* 気温・水温の色分け */
+td.cl3 { background-color: #506aFF; /* 濃青：気温-10℃未満、水温10℃未満 */
+         color: #FFFFFF; /* 暗い背景で文字が見えるよう白に */ }
+td.cl2 { background-color: #A08aFF; /* 青　：気温-1～-10℃、水温10～14℃ */ }
+td.cld { background-color: #ADD8E6; /* 薄青：気温 0～  9℃、水温15～19℃ */ }
+td.opt { background-color: #90EE90; /* 薄緑：気温10〜 29℃、水温20～39℃ */ }
+td.hot { background-color: #FFB6C1; /* 薄赤：気温30～ 34℃、水温40～44℃ */ }
+td.ht2 { background-color: #FF8040; /* 濃赤：気温35℃以上、水温45℃以上 */ }
+/*--- 時間帯と明るさ ここまで ---*/
+/*--- 間合いの説明図 ここから ---*/
+.range td { text-align: center; height: 24px; }
+.m0 { background: #ffffff; }
+.m2 { background: #a0d8ef; } /* 水色 */
+.m3 { background: #ccffcc; } /* 明るい緑 */
+.m4 { background: #ffffb3; } /* 薄黄 */
+.m5 { background: #ffc6a5; } /* 薄橙 */
+.m6 { background: #ffaaaa; } /* 赤系 */
+/*--- 間合いの説明図 ここまで --*/
+/*--- カレンダー ここから ---*/
+.calendar-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.month {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.month h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
+  font-size: 1.2em;
+  line-height: 1.0; /* 行間を狭める */
+}
+.month.winter { background-color: #e6f0fa; }
+.month.spring { background-color: #e6fae6; }
+.month.summer { background-color: #faf4e6; }
+.month.autumn { background-color: #fae6e6; }
+.month.world-day { background-color: #f0e6fa; text-align: center; }
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.9em;
+  line-height: 1.0; /* 行間を狭める */
+}
+.days div {
+  padding: 4px;
+  border: 1px solid #eee;
+}
+.days .header {
+  background-color: #333;
+  color: #fff;
+  font-weight: bold;
+}
+.special-day {
+  background-color: #ffeb3b;
+  font-weight: bold;
+}
+.event {
+    font-size: 0.8em;
+    color: #d30000;
+}
+.moon-full { background-color: #ffff80; }
+.moon-half { background-color: #fff9c4; }
+.moon-new  { background-color: #c0cec5; }
+/*--- カレンダー ここまで ---*/
+/*--- おもな都市・村（レオール）ここから ---*/
+.map-container {
+    position: relative;
+    width:  400px; /* 地図画像の幅に合わせて調整 */
+    height: 600px; /* 地図画像の高さに合わせて調整 */
+    background: url('../images/9_6_leor.jpg') no-repeat center;
+    background-size: cover;
+    margin: 0 auto;
+    border: 1px solid #333;
+}
+.label {
+    position: absolute;
+    color: #5b3944;
+    font-weight: bold;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px #fff;
+    pointer-events: none; /* クリック無効化 */
+}
+.berlrista  { left: 174px; top:  52px; }
+.bardiport  { left:  76px; top: 134px; }
+.santario   { left: 164px; top: 142px; }
+.fonteverdi { left: 196px; top: 200px; }
+.capital    { left: 184px; top: 236px; }
+.calmedia   { left: 248px; top: 285px; }
+/*--- おもな都市・村（レオール）ここまで ---*/
