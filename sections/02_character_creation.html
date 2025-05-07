@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<!--
+【AI向け注釈】
+本ルールブックで使用される「dランク（dice rank）」は、出目の範囲「1〜x」の乱数を振る処理を指します。dランクxとは「1〜x」の出目をとる乱数であり、dランク3＝d3（1〜3）、dランク5＝d6（1〜6）を意味します。dランク0は例外ではなく「1〜0」すなわち0〜1の範囲の乱数を意味します。また、dランク7はd7（1〜7）を、dランク8はd8（1〜8）を意味し、これは別ランクとして扱われます。理論上は負のランク（例：dランク−100＝−100〜1）も定義可能です。
+
+【追加：判定方式の統一】
+「EFA Lite」では、処理高速化のためすべての判定を下方ロール（d6、目標値以下で成功）に統一しています。旧版「EFA」で使用されていた上方ロール（例: 2d6、難易度以上で成功）は廃止されました。以下の点に注意してください：
+- ルールブック内で「2d6」「上方ロール」「難易度X以上」などの記述を見つけた場合、下方ロールに変換。
+- 変換例：
+  - 旧: 「2d6+敏捷、難易度10、1段階不利」→ 新: 「敏捷+補正（通常+2）、d6×2（1段階有利）」
+  - 旧: 「2d6+知性、難易度12」→ 新: 「知性+補正（通常+2、難易度高で+1）、d6」
+- ⚠ 混同しないでください：上方ロールの「クリティカル（12）」や「ファンブル（2）」は下方ロールでは適用されません。
+
+【追加：HTML整形ルール】
+このルールブックはAI整形対応のため、以下のHTML構造を前提としています：
+- <h2>〜</h2>、<h3>〜</h3>、<h4>〜</h4>、<h4>〜</h4>、<p>〜</p> は、それぞれ1行にまとまっている。
+- </p> の後の改行は保持するが、他の閉じタグの直後には原則改行を入れない。
+- <tr><th>...</th></tr>、<tr><td>...</td></tr> は1行に収める。
+- <table>内の<br>の直後の改行は削除するが、テーブル外の<br>には改行を残す。
+
+【追加：誤解されやすい点のQ&A】
+Q1. 「飛行キャラクター」とは「飛行中のキャラ」のこと？
+→ いいえ。「飛行可能なキャラクター」と「飛行中のキャラクター」は明確に区別されます。
+
+Q2. 窒息スロットは「蓄積3で1スロット」？
+→ いいえ。窒息は蓄積値で管理され、「体力+2」以上で発症します。
+
+Q3. 飛行中に攻撃などの行動をすると、さらに窒息がたまる？
+→ いいえ。ホバリングや飛行移動でAPを支払っていれば、それ以上の窒息は発生しません。
+
+Q4. 滑空は飛行状態ではない？
+→ いいえ。滑空は飛行状態の一部であり、行動制限も飛行中として扱われます。
+
+Q5. 窒息が発症してもすぐ治る？
+→ いいえ。蓄積値が0になるまでAP−1の効果は継続します。
+
+-->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/efa_lite.css">
+<title>EFA Lite ルールブック</title>
+</head>
+<body>
+<div id="topbar"><a href="00_toc.html#00_toc">目次へ戻る</a></div>
+<!--#HEADER_END-->
+<!--------------------------------------------------------------------------------------------------
+-   2. キャラクターの作成と成長
+--------------------------------------------------------------------------------------------------->
+<h1 id="02_character_creation">2. キャラクターの作成と成長</h1>
+<p>このゲームでは、キャラクターを管理するために3つの基本能力を使います。それは、<strong>体力</strong>、<strong>敏捷</strong>、そして<strong>知性</strong>です。この3つの能力が、キャラクターの行動や戦闘、魔法、その他の判定に大きく影響を与えます。</p>
+
+<p>これらの能力を基に、キャラクターの運動能力や精神力、回避能力などの計算が行われます。ただし、これらの計算は、まず種族とタイプを選んでから行います。そのため、最初に自分のキャラクターの種族やタイプを選んで、派生ステータスや初期のHP・MPなどはすでに決まっていることが多いです。</p>
+
+<p>派生ステータスや計算結果の一部は、すでに種族データに記載されています。これにより、プレイヤーが自分で計算する必要がなく、スムーズにゲームが進められるようになっています。</p>
+
+<h3>基本能力値の概要</h3>
+<ul>
+  <li><strong>体力：</strong> 主にHPや耐久力、近接戦闘に影響。装備の重さに対する耐性もここに依存します。</li>
+  <li><strong>敏捷：</strong> 主に移動速度、回避、行動順、命中などに関係します。</li>
+  <li><strong>知性：</strong> 魔法の発動成功率やMP、防御的な思考行動、知的作業に関係します。</li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   2.1. キャラクターシートの読み方
+--------------------------------------------------------------------------------------------------->
+<h2 id="02_character_sheet_reading">2.1. キャラクターシートの読み方</h2>
+<p>この章では、キャラクターシートの使い方を学ぶことができます。サンプルキャラクターを使って、どのようにシートに情報を記入し、ゲームを開始するのかを確認しましょう。</p>
+
+<h3>サンプルキャラクター: ガルド（オーク・プロディジーA）</h3>
+<ul>
+  <li>種族: オーク</li>
+  <li>背景カテゴリ: 戦士</li>
+  <li>基本能力値: 体力2、敏捷1、知性1</li>
+  <li>派生ステータス: 運動2、機転1、精神2</li>
+  <li>HP: 7、MP: 4</li>
+  <li>選択したスキル: 傭兵の経験</li>
+  <li>初期装備: クラブ、レザーアーマー、リュックサック</li>
+</ul>
+<!-- 古い記述なのであとで消す予定
+<p class="note">※負傷スロットの状態は🩸（マーク）、🩹（手当て済み）で表しています。負傷スロットにマークする際は🩸の右隣の□に、その負傷スロットが手当て済みになったら🩹の右隣の□にチェックを記入してください。</p>
+<h4>負傷スロットの読み方</h4>
+<p>キャラクターシートの「負傷スロット」は1〜6の番号が振られており、それぞれに以下のようなチェック欄があります：</p>
+<ul>
+<li><strong>🩸□🩹□</strong>：未負傷</li>
+<li><strong>🩸☑🩹□</strong>：負傷中</li>
+<li><strong>🩸☑🩹☑</strong>：手当て済み</li>
+</ul>
+<p>このように、<strong>🩸や🩹のマーク自体は印刷済み</strong>で、実際にプレイヤーが記入するのは横の<strong>□にレ点（☑）</strong>を入れる形になります。ケガをしたら🩸側にチェックを入れ、手当てを受けたら🩹側にもチェックを入れていきます。</p>
+-->
+<!--
+    ■ サンプルキャラクター：ガルド
+-->
+<div class="character-sheet">
+<h3 style="text-align: center; color: #2c3e50; font-size: 16px; margin: 2px 0;">EFA Lite キャラクターシート</h3>
+<!-- 基本情報 -->
+<table class="basic-info character-sheet-table">
+<tr><th colspan="4">基本情報</th><td class="illustration-box" rowspan="7" background="images/02_gald.jpg">キャラクターイラスト</td></tr>
+<tr><th>名前</th><td colspan="3">ガルド</td></tr>
+<tr><th>種族・タイプ</th><td colspan="3">オーク・プロディジーA</td></tr>
+<tr><th>種族ボーナス</th><td colspan="3">暗視, 休憩時HP回復量d2</td></tr>
+<tr><th>体力</th><td class="center">2</td><th>運動</th><td class="center">2</td></tr>
+<tr><th>敏捷</th><td class="center">1</td><th>機転</th><td class="center">1</td></tr>
+<tr><th>知性</th><td class="center">1</td><th>精神</th><td class="center">2</td></tr>
+<tr style="height:90px"><th>背景設定</th><td colspan="4">ガルドはベルジュ帝国とキャメロン連邦の国境付近の荒野で育ったオークの若者で、過酷な環境での生存術を身につけてきた。力強い体格を活かして戦闘に挑むが、知性や敏捷性もバランスよく持ち合わせており、仲間と共に冒険を続ける中で成長を目指している。暗視能力を活かして夜間の斥候役を担うことも多い。</td></tr>
+<tr><th>スキル数(初期+成長)</th><td> 1 + 0</td><th>HP(現在/最大)</th><td colspan="2" style="text-align: right"> 8 / 8 </td></tr>
+<tr><th>移動力</th><td class="center">6m</td><th>MP(現在/最大)</th><td colspan="2" style="text-align: right"> 4 / 4 </td></tr>
+</table>
+<!-- スキル -->
+<table class="skills-table character-sheet-table">
+<tr><th>スキル名</th><th>効果</th><th>備考</th></tr>
+<tr><td>傭兵の経験</td><td>最大HP+1、体力関連の判定ランク+1</td><td>重装備の長時間運搬</td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+</table>
+<!-- 装備 -->
+<table class="equipment-table character-sheet-table align-table-center-1 align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6 align-table-center-7 align-table-center-8">
+<tr><th colspan="7">装備</th></tr>
+<tr><th>武器・盾</th><th>必要体力</th><th>命中率</th><th>威力</th><th>範囲</th><th>防御率/点</th><th>備考</th></tr>
+<tr class="center"><td class="left">クラブ</td><td>1</td><td>3/2</td><td>1/d2</td><td>2m/10m</td><td>1/2</td><td>-</td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><th>防具</th><th>必要体力</th><th>防御率</th><th>防御点</th><th>魔法防御率</th><th colspan="2">備考</th></tr>
+<tr class="center"><td class="left">レザーアーマー</td><td>0</td><td>3</td><td>1</td><td>0<td colspan="2" class="left">柔軟な革製の鎧</td></tr>
+<tr><th>回避判定</th><th style="text-align: right">回避率(通常/会心)：</th><td class="center">1/1</td><th></th><th></th><td colspan="2"></td></tr>
+<tr><th>アイテム名称</th><th>価格(gp)</th><th colspan="3">説明</th><th colspan="2">所持金</th></tr>
+<tr><td>リュックサック</td><td class="center">1</td><td colspan="3">背負えるので手が塞がらない</td><td colspan="2" rowspan="3">13.25gp</td></tr>
+<tr><td>保存食(1食分)</td><td class="center">0.05</td><td colspan="3">干し肉・豆・固いパンなどが入っている</td></tr>
+<tr><td>水筒</td><td class="center">0.2</td><td colspan="3">革製の容器。容量2リットル</td></tr>
+</table>
+<!-- その他 -->
+<table class="other-table character-sheet-table">
+<tr><th colspan="7">その他</th></tr>
+<tr><th>状態異常</th><td colspan="6"></td></tr>
+<tr>
+<th rowspan="2">負傷スロット</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+</tr>
+<tr class="center">
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+</tr>
+<tr><th>メモ</th><td colspan="6"></td></tr>
+</table>
+</div>
+<!--
+    ■ サンプルキャラクター：セリナ
+-->
+<div class="character-sheet">
+<h3 style="text-align: center; color: #2c3e50; font-size: 16px; margin: 2px 0;">EFA Lite キャラクターシート</h3>
+<!-- 基本情報 -->
+<table class="basic-info character-sheet-table">
+<tr><th colspan="4">基本情報</th><td class="illustration-box" rowspan="7" background="images/02_serina.jpg">キャラクターイラスト</td></tr>
+<tr><th>名前</th><td colspan="3">セリナ</td></tr>
+<tr><th>種族・タイプ</th><td colspan="3">エルフ・プロディジーB</td></tr>
+<tr><th>種族ボーナス</th><td colspan="3">暗視, 休憩時MP回復量d2</td></tr>
+<tr><th>体力</th><td class="center">1</td><th>運動</th><td class="center">2</td></tr>
+<tr><th>敏捷</th><td class="center">2</td><th>機転</th><td class="center">2</td></tr>
+<tr><th>知性</th><td class="center">1</td><th>精神</th><td class="center">1</td></tr>
+<tr style="height:90px"><th>背景設定</th><td colspan="4">セリナはアムサリア王国の針葉樹林帯で育ったエルフの魔法使い見習い。自然と調和するエルフの文化の中で育ち、薬草採取の技術を身につけた。弓術と魔法を組み合わせた戦闘スタイルを持ち、仲間を支援する役割を担う。休憩時のMP回復量d2の種族ボーナスを活かし、長期戦で力を発揮する。</td></tr>
+<tr><th>スキル数(初期+成長)</th><td class="center">初期 1 / 成長 0</td><th>HP(現在/最大)</th><td colspan="2" style="text-align: right"> 5 / 5</td></tr>
+<tr><th>移動力</th><td class="center">7m</td><th>MP(現在/最大)</th><td colspan="2" style="text-align: right"> 6 / 6 </td></tr>
+</table>
+<!-- スキル -->
+<table class="skills-table character-sheet-table">
+<tr><th>スキル名</th><th>効果</th><th>備考</th></tr>
+<tr><td>薬草採取</td><td>最大MP+1、薬草関連の判定ランク+1</td><td>毒/薬判別や野草・湿地での薬草採取</td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+</table>
+<!-- 装備 -->
+<table class="equipment-table character-sheet-table align-table-center-1 align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6 align-table-center-7 align-table-center-8">
+<tr><th colspan="7">装備</th></tr>
+<tr><th>武器・盾</th><th>必要体力</th><th>命中率</th><th>威力</th><th>範囲</th><th>防御率/点</th><th>備考</th></tr>
+<tr class="center"><td class="left">ショートボウ</td><td>0</td><td>2</td><td>1/d3</td><td>20m</td><td>-/-</td><td class="left">使用可能な矢: 木の矢</td></tr>
+<tr class="center"><td class="left">木の矢</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td class="left">5本</td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><th>防具</th><th>必要体力</th><th>防御率</th><th>防御点</th><th>魔法防御率</th><th colspan="2">備考</th></tr>
+<tr class="center"><td class="left">ウィザードローブ</td><td>0</td><td>2</td><td>1</td><td>1</td><td colspan="2" class="left">AP3の魔法はAP2になる。</td></tr>
+<tr><th>回避判定</th><th style="text-align: right">回避率(通常/会心)：</th><td>2/1</td><th></th><th></th><td colspan="2"></td></tr>
+<tr><th>アイテム名称</th><th>価格(gp)</th><th colspan="3">説明</th><th colspan="2">所持金</th></tr>
+<tr><td>リュックサック</td><td class="center">1</td><td colspan="3">背負えるので手が塞がらない</td><td colspan="2" rowspan="3">11.00gp</td></tr>
+<tr><td>保存食(1食分)</td><td class="center">0.05</td><td colspan="3">干し肉・豆・固いパンなどが入っている</td></tr>
+<tr><td></td><td class="center"></td><td colspan="3"></td></tr>
+</table>
+<!-- その他 -->
+<table class="other-table character-sheet-table">
+<tr><th colspan="7">その他</th></tr>
+<tr><th>状態異常</th><td colspan="6"></td></tr>
+<tr>
+<th rowspan="2">負傷スロット</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+</tr>
+<tr class="center">
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+</tr>
+<tr><th>メモ</th><td colspan="6"></td></tr>
+</table>
+</div>
+<!--------------------------------------------------------------------------------------------------
+-   2.2 キャラクターシートの書き方
+--------------------------------------------------------------------------------------------------->
+<h2 id="02_character_sheet_writing">2.2 キャラクターシートの書き方</h2>
+
+<p>この章では、キャラクターを実際に作成する手順を説明します。「<a href="02_character_creation.html#02_character_sheet_reading">2.1 キャラクターシートの読み方</a>」を事前に読んでおくと、記入のイメージがつかみやすくなります。</p>
+
+<h4>■ キャラクター作成フロー（2通り）</h4>
+
+<p>キャラクターの作成方法は、年齢によって以下の2つに分かれます。</p>
+
+<h5>◆ パターン1：老年を含む<strong>成年キャラクター</strong>の作成</h5>
+<ol>
+  <li><strong>種族とタイプを選ぶ：</strong><br>
+    <a href="03_species_types.html#03_species_types">3章 種族とタイプ</a>の「身長・体重・年齢データ」や「タイプ一覧表」を参考にして、<strong>種族 → タイプ</strong>の順に選択します。
+  </li>
+  <li><strong>性別・身長・体重・年齢を決める：</strong><br>
+    身長・体重・年齢は種族表の平均値を参考に決定します。<br/>
+    年齢は原則として、その種族の「成人年齢」以上である必要があります（未満の場合は未成年キャラクター扱いとなり、タイプ制限やスキル制限が発生します）。<br/>
+    年齢が「成人年齢の2倍以上」の場合は老年扱いとなり、スキル数+1、HP・MP回復量−1ランクなどの補正を受けます（<a href="02_character_creation.html#02_age_weight">2.4 年齢と体格による補正</a>参照）。
+  </li>
+  <li><strong>体重・年齢による補正を適用する：</strong><br>
+    最大HPに体重補正（+0〜+2）、最大MPに年齢補正（+0〜+2）を加算します（<a href="02_character_creation.html#02_recalculation">2.3.2 成長に伴う再計算</a>参照）。
+  </li>
+  <li><strong>生活スキルを1つ取得：</strong><br>
+    成年キャラクターは、生活スキルを1つ無料で習得できます（<a href="04_skills.html#04_lifestyle_skills">4.1 生活系スキル</a>参照）。
+  </li>
+</ol>
+
+<h5>◆ パターン2：<strong>未成年キャラクター</strong>の作成</h5>
+<ol>
+  <li><strong>種族・性別・身長・体重・年齢を決める：</strong><br>
+    <a href="03_species_types.html#03_species_types">3章 種族とタイプ</a>を参考にしながら、タイプよりも先にプロフィールを決定します。<br>
+    未成年キャラクターは「若年Lv」に応じて能力値の上限やスキル数の制限があるため、先に年齢を確定させる必要があります。
+  </li>
+  <li><strong>タイプを選ぶ：</strong><br>
+    若年Lvに応じた制限を確認し、能力値の合計や制限に適合するタイプを選びます（<a href="02_character_creation.html#02_age_weight">2.4 年齢と体格による補正</a>参照）。
+  </li>
+  <li><strong>体重・年齢による補正を適用する：</strong><br>
+    最大HPに体重補正（+0〜+2）、最大MPに年齢補正（+0〜+2）を加算します。
+  </li>
+  <li><strong>生活スキルは取得しない：</strong><br>
+    未成年キャラクターはスキルを自動取得せず、成長によって取得する必要があります。
+  </li>
+</ol>
+
+<h4>■ 共通ステップ</h4>
+
+<ol start="5">
+  <li><strong>スキルの選択：</strong><br>
+    各キャラクターは、初期成長ポイント（タイプで決定）を使用して、生活系または戦闘系スキルを1点につき1つ取得できます（<a href="02_character_creation.html#02_growth_points">2.3.1 成長ポイント</a>、<a href="04_skills.html#04_skills">4章 スキル</a>参照）。
+  </li>
+
+  <li><strong>派生ステータス・移動力・HP/MPなどの再計算：</strong><br>
+    種族と能力値から、派生能力（運動・機転・精神）、移動力、回避値、魔法防御率、最大HP/MPを算出します（<a href="02_character_creation.html#02_recalculation">2.3.2 再計算</a>参照）。
+  </li>
+
+  <li><strong>装備品の購入と装備：</strong><br>
+    <a href="06_items.html#06_items">6章 アイテム</a>から装備を選び、必要体力や所持金に注意して記入します。<br>
+    種族によっては初期装備に特典がある場合もあります（例：オークは特定素材の装備を無料で入手可能）。
+  </li>
+
+  <li><strong>最終チェックと背景の記入：</strong><br>
+    キャラクターシートの内容を再確認し、背景設定に応じてスキル・装備・年齢などの整合性を確認してください。
+  </li>
+</ol>
+
+<p class="note">※若年Lvやスキル制限の詳細は<a href="02_character_creation.html#02_age_weight">2.4 年齢と体格による補正</a>を参照してください。</p>
+
+<!--
+    ■ 空のキャラクターシート
+-->
+
+<div class="character-sheet">
+<h3 style="text-align: center; color: #2c3e50; font-size: 16px; margin: 2px 0;">EFA Lite キャラクターシート</h3>
+<!-- 基本情報 -->
+<table class="basic-info character-sheet-table">
+<tr><th colspan="4">基本情報</th><td class="illustration-box" rowspan="7">キャラクターイラスト</td></tr>
+<tr><th>名前</th><td colspan="3"></td></tr>
+<tr><th>種族・タイプ</th><td colspan="3"></td></tr>
+<tr><th>種族ボーナス</th><td colspan="3"></td></tr>
+<tr><th>体力</th><td></td><th>運動</th><td></td></tr>
+<tr><th>敏捷</th><td></td><th>機転</th><td></td></tr>
+<tr><th>知性</th><td></td><th>精神</th><td></td></tr>
+<tr style="height:90px"><th>背景設定</th><td colspan="4"></td></tr>
+<tr><th>スキル数(初期+成長)</th><td>　+</td><th>HP(現在/最大)</th><td colspan="2" style="text-align: right">/　　&nbsp;</td></tr>
+<tr><th>移動力</th><td class="center"></td><th>MP(現在/最大)</th><td colspan="2" style="text-align: right">/　　&nbsp;</td></tr>
+</table>
+<!-- スキル -->
+<table class="skills-table character-sheet-table">
+<tr><th>スキル名</th><th>効果</th><th>備考</th></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td></tr>
+</table>
+<!-- 装備 -->
+<table class="equipment-table character-sheet-table align-table-center-1 align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6 align-table-center-7 align-table-center-8">
+<tr><th colspan="7">装備</th></tr>
+<tr><th>武器・盾</th><th>必要体力</th><th>命中率</th><th>威力</th><th>範囲</th><th>防御率/点</th><th>備考</th></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr class="center"><td class="left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><th>防具</th><th>必要体力</th><th>防御率</th><th>防御点</th><th>魔法防御率</th><th colspan="2">備考</th></tr>
+<tr class="center"><td class="left"></td><td>0</td><td></td><td></td><td><td colspan="2" class="left"></td></tr>
+<tr><th>回避判定</th><th style="text-align: right">回避率(通常/会心)：</th><td class="center"></td><th></th><th><td colspan="2"></td></th></tr>
+<tr><th>アイテム名称</th><th>価格(gp)</th><th colspan="3">説明</th><th colspan="2">所持金</th></tr>
+<tr><td></td><td></td><td colspan="3"></td><td colspan="2" rowspan="3"></td></tr>
+<tr><td></td><td></td><td colspan="3"></td></tr>
+<tr><td></td><td></td><td colspan="3"></td></tr>
+</table>
+<!-- その他 -->
+<table class="other-table character-sheet-table">
+<tr><th colspan="7">その他</th></tr>
+<tr><th>状態異常</th><td colspan="6"></td></tr>
+<tr>
+<th rowspan="2">負傷スロット</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+</tr>
+<tr class="center">
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+<td>🩸☐ 🩹☐</td>
+</tr>
+<tr><th>メモ</th><td colspan="6"></td></tr>
+</table>
+</div>
+<!--------------------------------------------------------------------------------------------------
+-   2.3 キャラクターの成長
+--------------------------------------------------------------------------------------------------->
+<h2 id="02_growth">2.3 キャラクターの成長</h2>
+
+<p>この章では、キャラクターが冒険やシナリオの進行を通じて成長する方法を説明します。<br>
+成長の中心は「スキルの習得」と「能力値の成長」であり、いずれも成長ポイントを消費して行います。</p>
+<!--------------------------------------------------------------------------------------------------
+-   2.3.1 成長ポイントの獲得と使い方
+--------------------------------------------------------------------------------------------------->
+<h3 id="02_growth_points">2.3.1 成長ポイントの獲得と使い方</h3>
+
+<p>キャラクターは、<strong>シナリオの終了時</strong>にGMの裁量で<strong>成長ポイント</strong>を獲得できます。</p>
+<ul>
+  <li>標準的な3時間程度のシナリオで <strong>1点</strong> 獲得</li>
+  <li>短編シナリオ（1時間前後）を2回で <strong>1点</strong> 獲得</li>
+  <li>長編シナリオ（6時間以上）の中間での成長も可能（GM裁量）</li>
+</ul>
+
+<p>獲得した成長ポイントは以下の用途に使用できます：</p>
+<ul>
+  <li><strong>生活系スキルの習得：</strong> 1点消費で1つ習得（<a href="04_skills.html#04_lifestyle_skills">4.1 生活系スキル</a>参照）</li>
+  <li><strong>戦闘系スキルの習得：</strong> 1点消費で1つ習得（<a href="04_skills.html#04_combat_skills">4.2 戦闘系スキル</a>参照）</li>
+  <li><strong>能力値の成長：</strong> <u>成長できるのは「全年齢の人間」と「若年の人間以外のキャラクター」に限られます。</u><br/>
+    以下の表に従って成長ポイントを消費します。
+  </li>
+</ul>
+
+<table class="align-table align-table-center-1 align-table-center-2 align-table-center-3">
+<tr><th>能力値</th><th>通常成長</th><th>限界突破</th></tr>
+<tr><td>0 → 1</td><td>     1点</td><td>     2点</td></tr>
+<tr><td>1 → 2</td><td>     1点</td><td>     2点</td></tr>
+<tr><td>2 → 3</td><td>     1点</td><td>     3点</td></tr>
+</table>
+
+<p><strong>限界突破</strong>とは、成長後の能力値が現在の能力値（体力、敏捷、知性）の最大値を超える場合に発生し、追加の成長ポイントが必要です。<br/>
+例：現在の能力値が「体力1・敏捷0・知性0」のオークの場合、最大値は1（体力）。<br/>
+- 敏捷を0から1にする：最大値1を超えないので通常成長（1点）。<br/>
+- 体力を1から2にする：最大値1を超えるので限界突破（2点）。<br/>
+このように、能力値は1ずつ成長し、各段階で通常成長または限界突破のコストを支払います。</p>
+
+<p><strong>限界突破時に成長ポイントが不足する場合</strong>、習得済みのスキルを忘却（1スキル = 1点）で不足ポイントを補えます。ただし、成人時に得た生活スキルは忘却することができません。</p>
+
+<p class="note">成長によって得られる能力値の構成は、<strong>その種族に存在しないタイプ（構成）にならないよう</strong>注意してください。種族ごとに定められた能力値の組み合わせ以外には成長できません。<br>
+例：ドワーフには「敏捷2」のタイプが存在しないため、敏捷を2以上に成長させることはできません。<br>
+また、人間には「体力2・敏捷2・知性0」や「体力2・敏捷1・知性2」のようなタイプは存在しないため、そうした構成にもできません。</p>
+<!--------------------------------------------------------------------------------------------------
+-   2.3.2 成長に伴う再計算
+--------------------------------------------------------------------------------------------------->
+<h3 id="02_recalculation">2.3.2 成長に伴う再計算</h3>
+
+<p>能力値や種族の変更時に以下のステータスを再計算します。</p>
+
+<h4>■ 派生ステータス</h4>
+<p>「体力」「敏捷」「知性」のいずれかが変化した場合、以下の派生ステータスを再計算します：</p>
+<ul>
+  <li><strong>運動：</strong> 体力 + 敏捷 − 1</li>
+  <li><strong>機転：</strong> 敏捷 + 知性 − 1</li>
+  <li><strong>精神：</strong> 知性 + 体力 − 1</li>
+</ul>
+<p>いずれかの能力値が0の場合、派生値は「もう一方の能力値の半分（切り捨て）」で算出します。<br>
+例：「体力1・敏捷0」なら運動=0、「体力2・敏捷0」なら運動=1</p>
+
+<h4>■ 最大HP・最大MP</h4>
+<ul>
+  <li><strong>最大HP：</strong> 体力×2 + 敏捷 + <a href="02_character_creation.html#02_age_weight">体重補正</a></li>
+  <li><strong>最大MP：</strong> 敏捷 + 知性×2 + <a href="02_character_creation.html#02_age_weight">年齢補正</a></li>
+  <li><strong>フェアリー特例：</strong> 最大HP = 体力 + 敏捷 + <a href="02_character_creation.html#02_age_weight">体重補正</a></li>
+</ul>
+<p>最大HPは最低1、最大MPは最低0。最大値が増減しても現在値は維持され、回復時に新しい最大値を超えられません。</p>
+
+
+<h4>■ 魔法防御率・回避値</h4>
+<ul>
+  <li><strong>魔法防御率：</strong> 知性×2 + 1</li>
+  <li><strong>回避値：</strong> 敏捷 − 1（マイナスになることもあります）</li>
+</ul>
+<p>装備による補正は再計算後に加算します。</p>
+<!--------------------------------------------------------------------------------------------------
+-   2.4 年齢と体格による補正
+--------------------------------------------------------------------------------------------------->
+<h2 id="02_age_weight">2.4 年齢と体格による補正</h2>
+
+<p>この章では、キャラクターの年齢や体重によるステータス補正、成長・成熟のルールを説明します。</p>
+<!--------------------------------------------------------------------------------------------------
+-   2.4.1 HP・MPの補正（体重・年齢）
+--------------------------------------------------------------------------------------------------->
+<h3 id="02_hp_mp_bonus">2.4.1 HP・MPの補正（体重・年齢）</h3>
+
+<h4>■ 体重によるHP補正と防具価格</h4>
+<div>
+  <table class="align-table align-table-center-1 align-table-center-2  align-table-center-3 float">
+  <tr><th>体重      </th><th>HP補正</th><th>防具価格補正</th></tr>
+  <tr><td>  〜 9.9kg</td><td>    +0</td><td>        −50%</td></tr>
+  <tr><td>10〜39.9kg</td><td>    +0</td><td>        −20%</td></tr>
+  <tr><td>40〜79.9kg</td><td>    +1</td><td>       ± 0 </td></tr>
+  <tr><td>80kg〜    </td><td>    +2</td><td>        +50%</td></tr>
+  </table>
+  <p>キャラクターの体重に応じて、最大HPと防具価格に右記の補正が適用されます：</p>
+  <p>体重が変化してカテゴリが変わった場合、最大HPを再計算し、防具の買い替えが必要です。ただし、現在HPは変化せず、回復時に新しい最大値を超えることはできまん。<br/><br/></p>
+</div>
+
+<h4>■ 年齢によるMP補正</h4>
+<div>
+  <table class="align-table align-table-center-1 align-table-center-2 float">
+  <tr><th>年齢    </th><th>MP補正</th></tr>
+  <tr><td>  〜29歳</td><td>    +0</td></tr>
+  <tr><td>30〜59歳</td><td>    +1</td></tr>
+  <tr><td>60歳〜  </td><td>    +2</td></tr>
+  </table>
+  <p>キャラクターの年齢に応じて、最大MPに右記の補正が適用されます：</p>
+  <p>年齢変化による最大MPの変動は最大HPと同様に扱い、現在MPは維持されますが、回復時に新しい最大値を超えることはできません。<br/><br/><br/></p>
+</div>
+<!--------------------------------------------------------------------------------------------------
+-   2.4.2 若年キャラクターの作成
+--------------------------------------------------------------------------------------------------->
+<h3 id="02_youth_creation">2.4.2 若年キャラクターの作成</h3>
+
+<p>キャラクター作成時に、年齢が成人年齢を下回っている場合、その種族の「成長周期」に従って<strong>若年ペナルティ（若年Lv）</strong>が発生します。</p>
+<p>若年キャラクターは、年齢から若年Lvを算出し、スキル数が0未満にならないタイプを選択します。能力値0からの成長は限界突破（成長ポイント2点）が必要です。</p>
+<table class="align-table align-table-center-1 align-table-center-2  align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6 align-table-center-7">
+  <tr>
+    <th rowspan="2">若年Lv</th>
+    <th>ワスプ               </th>
+    <th>リカント<br/>オーク等</th>
+    <th>人間    <br/>ハーピー</th>
+    <th>ドワーフ<br/>ノーム等</th>
+    <th>エルフ               </th>
+    <th rowspan="2">若年ペナルティによる<br/>成長ポイント補正</th>
+  </tr>
+  <tr>                    <th>成人 5歳</th><th>成人10歳</th><th>成人15歳</th><th>成人25歳</th><th>成人40歳</th></tr>
+  <tr><td>Lv1        </td><td>4歳     </td><td> 8～ 9歳</td><td>12～14歳</td><td>20～24歳</td><td>32～39歳</td><td>-1</td></tr>
+  <tr><td>Lv2        </td><td>3歳     </td><td> 6～ 7歳</td><td> 9～11歳</td><td>15～19歳</td><td>24～31歳</td><td>-3</td></tr>
+  <tr><td>Lv3        </td><td>2歳     </td><td> 4～ 5歳</td><td> 6～ 8歳</td><td>10～14歳</td><td>16～23歳</td><td>-5</td></tr>
+  <tr><td>Lv4        </td><td>1歳     </td><td> 2～ 3歳</td><td> 3～ 5歳</td><td> 5～ 9歳</td><td> 8～15歳</td><td>-7</td></tr>
+  <tr><td>Lv5        </td><td>0歳     </td><td> 0～ 1歳</td><td> 0～ 2歳</td><td> 0～ 4歳</td><td> 0～ 7歳</td><td><strong>操作不可</strong></td></tr>
+</table>
+<p>若年Lv4のキャラクターはスキル数−7、となり、能力値は種族によって以下のようになります：</p>
+<ul>
+  <li>人間：能力値オール0、スキル数1</li>
+  <li>他種族：能力値オール0、スキル数0</li>
+</ul>
+<p>ゴブリンの場合はスキル数補正が異なり、別の表を持ちます。<a href="03_species_types.html#03_goblin_aging">ゴブリンの若年ルール</a>を参照してください。</p>
+<!--------------------------------------------------------------------------------------------------
+-   2.4.3 成熟に伴う影響（スキルと回復）
+--------------------------------------------------------------------------------------------------->
+<h3 id="02_aging_effects">2.4.3 成熟に伴う影響（スキルと回復）</h3>
+
+<p><strong>成人キャラクター</strong>は、<strong>成人年齢（成熟Lv1）から</strong>以下の補正を受けます。補正は成人年齢ごとに1段階累積（Lv2: ×2、Lv3: ×3、Lv4: ×4…）。</p>
+<table class="align-table align-table-center-1 align-table-center-2  align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6">
+  <tr>
+    <th rowspan="2">成熟Lv</th>
+    <th>ワスプ  <br/>ゴブリン</th>
+    <th>リカント<br/>オーク等</th>
+    <th>人間    <br/>ハーピー</th>
+    <th>ドワーフ<br/>ノーム等</th>
+    <th>エルフ               </th>
+    <th rowspan="2">補正内容</th>
+  </tr>
+  <tr>                    <th>成人 5歳</th><th>成人10歳</th><th> 成人15歳</th><th>  成人25歳</th><th>  成人40歳</th></tr>
+  <tr><td>Lv1（成人）</td><td> 5～ 9歳</td><td>10～19歳</td><td>15～ 29歳</td><td> 25～ 49歳</td><td> 40～ 79歳</td><td>生活スキル+1</td></tr>
+  <tr><td>Lv2        </td><td>10～14歳</td><td>20～29歳</td><td>30～ 44歳</td><td> 50～ 74歳</td><td> 80～119歳</td><td>生活スキル+2<br/>回復量−0.5（HPまたはMP）</td></tr>
+  <tr><td>Lv3        </td><td>15～19歳</td><td>30～39歳</td><td>45～ 59歳</td><td> 75～ 99歳</td><td>120～159歳</td><td>生活スキル+3、回復量−1</td></tr>
+  <tr><td>Lv4        </td><td>20～24歳</td><td>40～49歳</td><td>60～ 74歳</td><td>100～124歳</td><td>160～199歳</td><td>生活スキル+4、回復量−1.5<br/>敏捷−1（敏捷0なら無視）</td></tr>
+  <tr><td>Lv5        </td><td>25～29歳</td><td>50～59歳</td><td>75～ 89歳</td><td>125～149歳</td><td>200～239歳</td><td>生活スキル+5、回復量−2</td></tr>
+  <tr><td>Lv6        </td><td>30～34歳</td><td>60～69歳</td><td>90～104歳</td><td>150～174歳</td><td>240～279歳</td><td>生活スキル+6、回復量−2.5</td></tr>
+</table>
+<p><strong>敏捷低下ルール</strong>：
+<ul>
+  <li>成熟Lv4（成人年齢×4）で敏捷−1（敏捷0なら無視）。成長ポイントの消費や限界突破とは無関係な状態異常として扱います。</li>
+  <li>能力値は0未満になりません。</li>
+  <li>低下後、派生ステータス、HP/MP、回避値を再計算します（<a href="02_character_creation.html#02_recalculation">2.3.2 成長に伴う再計算</a>参照）。</li>
+</ul>
+<p>例：人間（60歳、成熟Lv4、能力値：体力2、敏捷2、知性1）が敏捷−1。敏捷2→1となり、最大HP−1（7→6）、回避値1→0、機転−1（2→1）、運動−1（2→1）。</p>
+
+<h5>● 回復量の基本と成熟ペナルティ</h5>
+<p>通常、キャラクターは休憩・睡眠ごとに<strong>HP1点 + MP1点</strong>を回復します（一部種族は変則回復、例：オークはHP1.5点）。</p>
+<p>成熟による回復量ペナルティは以下のルールで適用：</p>
+<ul>
+  <li><strong>減少量</strong>：成熟Lv2以降、HPまたはMPの回復量を−0.5点（選択自由）。両方に振り分け可（例：Lv3でHP−0.5、MP−0.5）。</li>
+  <li><strong>マイナス回復</strong>：回復量が0未満の場合、休憩時にその分だけダメージ（HPまたはMP減少）。ただし、MPの現在値は0未満にならない。</li>
+  <li><strong>例外</strong>：MP回復量が0でさらにMP側に減少を割り振る場合、MP回復量は変化せず、代わりにHPが同量ダメージを受ける。</li>
+</ul>
+<div class="note">例：人間（成人年齢15歳、60歳＝成熟Lv4）の場合：
+  <ul>
+    <li>HP回復量-0.5、MP回復量−1（HP回復量の合計0.5点、MP回復量の合計0点）を選ぶと、休憩時にHPはd(0～1)点回復、MPは回復せず。</li>
+    <li>HP回復量通常、MP回復量−1.5（HP回復量の合計1点、MP回復量の合計−0.5点）を選ぶと、休憩時にHPが1点回復し、MPがd(0～1)点<strong>減少</strong>。</li>
+  </ul>
+</div>
+<!--#FOOTER_START-->
+</body>
+</html>

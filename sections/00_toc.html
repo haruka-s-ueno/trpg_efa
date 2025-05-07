@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<!--
+【AI向け注釈】
+本ルールブックで使用される「dランク（dice rank）」は、出目の範囲「1〜x」の乱数を振る処理を指します。dランクxとは「1〜x」の出目をとる乱数であり、dランク3＝d3（1〜3）、dランク5＝d6（1〜6）を意味します。dランク0は例外ではなく「1〜0」すなわち0〜1の範囲の乱数を意味します。また、dランク7はd7（1〜7）を、dランク8はd8（1〜8）を意味し、これは別ランクとして扱われます。理論上は負のランク（例：dランク−100＝−100〜1）も定義可能です。
+
+【追加：判定方式の統一】
+「EFA Lite」では、処理高速化のためすべての判定を下方ロール（d6、目標値以下で成功）に統一しています。旧版「EFA」で使用されていた上方ロール（例: 2d6、難易度以上で成功）は廃止されました。以下の点に注意してください：
+- ルールブック内で「2d6」「上方ロール」「難易度X以上」などの記述を見つけた場合、下方ロールに変換。
+- 変換例：
+  - 旧: 「2d6+敏捷、難易度10、1段階不利」→ 新: 「敏捷+補正（通常+2）、d6×2（1段階有利）」
+  - 旧: 「2d6+知性、難易度12」→ 新: 「知性+補正（通常+2、難易度高で+1）、d6」
+- ⚠ 混同しないでください：上方ロールの「クリティカル（12）」や「ファンブル（2）」は下方ロールでは適用されません。
+
+【追加：HTML整形ルール】
+このルールブックはAI整形対応のため、以下のHTML構造を前提としています：
+- <h2>〜</h2>、<h3>〜</h3>、<h4>〜</h4>、<h4>〜</h4>、<p>〜</p> は、それぞれ1行にまとまっている。
+- </p> の後の改行は保持するが、他の閉じタグの直後には原則改行を入れない。
+- <tr><th>...</th></tr>、<tr><td>...</td></tr> は1行に収める。
+- <table>内の<br>の直後の改行は削除するが、テーブル外の<br>には改行を残す。
+
+【追加：誤解されやすい点のQ&A】
+Q1. 「飛行キャラクター」とは「飛行中のキャラ」のこと？
+→ いいえ。「飛行可能なキャラクター」と「飛行中のキャラクター」は明確に区別されます。
+
+Q2. 窒息スロットは「蓄積3で1スロット」？
+→ いいえ。窒息は蓄積値で管理され、「体力+2」以上で発症します。
+
+Q3. 飛行中に攻撃などの行動をすると、さらに窒息がたまる？
+→ いいえ。ホバリングや飛行移動でAPを支払っていれば、それ以上の窒息は発生しません。
+
+Q4. 滑空は飛行状態ではない？
+→ いいえ。滑空は飛行状態の一部であり、行動制限も飛行中として扱われます。
+
+Q5. 窒息が発症してもすぐ治る？
+→ いいえ。蓄積値が0になるまでAP−1の効果は継続します。
+
+-->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/efa_lite.css">
+<title>EFA Lite ルールブック</title>
+</head>
+<body>
+<div id="topbar"><a href="00_toc.html#00_toc">目次へ戻る</a></div>
+<!--#HEADER_END-->
+<!--------------------------------------------------------------------------------------------------
+-   EFA Lite ルールブック
+--------------------------------------------------------------------------------------------------->
+<h1 id="00_toc">EFA Lite ルールブック</h1>
+<!--------------------------------------------------------------------------------------------------
+-   目次
+--------------------------------------------------------------------------------------------------->
+<h2 id="00_index">目次</h2>
+<ul>
+  <li><a href="00_toc.html#00_introduction"                            >序章：はじめに</a></li>
+  <li><a href="01_basic.html#01_basic"                                   >1. 基本ルール</a>
+    <ul>
+      <li><a href="01_basic.html#01_notation_rules"                      >1.1 記号・用語・略記のルール</a></li>
+      <li><a href="01_basic.html#01_success_structure"                   >1.2 判定の種類</a></li>
+      <li><a href="01_basic.html#01_success_check"                       >1.3 成功判定</a>
+        <ul>
+          <li><a href="01_basic.html#01_success_check_critical"          >1.3.1 会心ありの成功判定</a></li>
+          <li><a href="01_basic.html#01_advantage_stage"                 >1.3.2 判定段階（有利・不利）</a></li>
+          <li><a href="01_basic.html#01_advantage_select_mode"           >1.3.3 判定有利時の出目選択方式（標準ルール）</a></li>
+          <li><a href="01_basic.html#01_advantage_success_count_mode"    >1.3.4 判定有利時の成功数蓄積方式（用途限定）</a></li>
+          <li><a href="01_basic.html#01_success_check_no_critical"       >1.3.5 会心なしの成功判定</a></li>
+          <li><a href="01_basic.html#01_raise_result_with_mp"            >1.3.6 出目引き上げ（MP消費）</a></li>
+        </ul>
+      </li>
+      <li><a href="01_basic.html#01_opposed_check"                       >1.4 対抗判定</a></li>
+      <li><a href="01_basic.html#01_random_effect_drank"                 >1.5 dランク</a></li>
+      <li><a href="01_basic.html#01_fraction_rounding"                   >1.6 小数点のランダム丸め</a></li>
+      <li><a href="01_basic.html#01_distance"                            >1.7 距離とマスの計算</a></li>
+      <li><a href="#01_quality_quantity"                    >1.8 品質と数量の扱い</a></li>
+    </ul>
+  </li>
+  <li><a href="02_character_creation.html#02_character_creation"                      >2. キャラクターの作成と成長</a>
+    <ul>
+      <li><a href="02_character_creation.html#02_character_sheet_reading"             >2.1 キャラクターシートの読み方</a></li>
+      <li><a href="02_character_creation.html#02_character_sheet_writing"             >2.2 キャラクターシートの書き方</a></li>
+      <li><a href="02_character_creation.html#02_growth"                              >2.3 キャラクターの成長</a></li>
+      <li><a href="02_character_creation.html#02_age_weight"                          >2.4 年齢と体格による補正</a>
+        <ul>
+          <li><a href="02_character_creation.html#02_hp_mp_bonus"                     >2.4.1 HP・MPの補正（体重・年齢）</a></li>
+          <li><a href="02_character_creation.html#02_youth_creation"                  >2.4.2 若年キャラクターの作成</a></li>
+          <li><a href="02_character_creation.html#02_aging_effects"                   >2.4.3 成熟に伴う影響（スキルと回復）</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="03_species_types.html#03_species_types"                           >3. 種族とタイプ</a>
+    <ul>
+      <li><a href="03_species_types.html#03_species_orc"                         >3.1 オーク（前衛系）</a></li>
+      <li><a href="03_species_types.html#03_species_sprig"                       >3.2 スプリグ（機動型）</a></li>
+      <li><a href="03_species_types.html#03_species_dwarf"                       >3.3 ドワーフ（防御系）</a></li>
+      <li><a href="03_species_types.html#03_species_ricant"                      >3.4 リカント（機動型）</a></li>
+      <li><a href="03_species_types.html#03_species_lizardman"                   >3.5 リザードマン（防御型）</a></li>
+      <li><a href="03_species_types.html#03_species_elf"                         >3.6 エルフ（敏捷系・魔法）</a></li>
+      <li><a href="03_species_types.html#03_species_dryad"                       >3.7 ドライアド（僧侶魔法向き・防御型）</a></li>
+      <li><a href="03_species_types.html#03_species_human"                       >3.8 人間（万能）</a></li>
+      <li><a href="03_species_types.html#03_species_gnome"                       >3.9 ノーム（技術・魔法融合型）</a></li>
+      <li><a href="03_species_types.html#03_species_roper"                       >3.10 ローパー（後衛系・魔法）</a></li>
+      <li><a href="03_species_types.html#03_species_harpy"                       >3.11 ハーピー（飛行）</a></li>
+      <li><a href="03_species_types.html#03_species_fairy"                       >3.12 フェアリー（飛行）</a></li>
+      <li><a href="03_species_types.html#03_species_wasp"                        >3.13 ワスプ（飛行）</a></li>
+      <li><a href="03_species_types.html#03_species_goblin"                      >3.14 ゴブリン（集団系）</a></li>
+    </ul>
+  </li>
+  <li><a href="04_skills.html#04_skills">4. スキル</a>
+    <ul>
+      <li><a href="04_skills.html#04_lifestyle_skills"                    >4.1 生活系スキル</a>
+        <ul>
+          <li><a href="04_skills.html#04_profession_table"                >4.1.1 職業テーブル</a></li>
+          <li><a href="04_skills.html#04_lifestyle_skills_table"          >4.1.2 生活系スキルテーブル</a></li>
+          <li><a href="04_skills.html#04_lifestyle_skills_levels"         >4.1.3 生活系スキルの取得とレベルアップ</a></li>
+        </ul>
+      </li>
+      <li><a href="04_skills.html#04_combat_skills"                       >4.2 戦闘系スキル</a></li>
+      <li><a href="04_skills.html#04_species_skills"                      >4.3 種族特性スキル</a></li>
+      <li><a href="04_skills.html#04_mimicry_skills"                      >4.4 模倣準備済みスキル</a></li>
+    </ul>
+  </li>
+  <li><a href="05_magic.html#05_magic"                                   >5. 魔法</a>
+    <ul>
+      <li><a href="05_magic.html#05_magic_rules"                         >5.1 魔法に関するルール</a>
+        <ul>
+          <li><a href="05_magic.html#05_magic_ivoke"                     >5.1.1 魔法の発動</a></li>
+          <li><a href="05_magic.html#05_magic_outburst"                  >5.1.2 魔法の暴発</a></li>
+        </ul>
+      </li>
+      <li><a href="05_magic.html#05_magic_table"                         >5.2 魔法リスト</a>
+        <ul>
+          <li><a href="05_magic.html#05_magic_sorcerer"                  >5.2.1 魔術師魔法</a></li>
+          <li><a href="05_magic.html#05_magic_priest"                    >5.2.2 僧侶魔法</a></li>
+          <li><a href="05_magic.html#05_magic_elementaler"               >5.2.3 精霊魔法</a></li>
+        </ul>
+      </li>
+      <li><a href="05_magic.html#05_summoned_beings"                     >5.3 召喚体</a>
+    </ul>
+  </li>
+  <li><a href="06_items.html#06_items"                                   >6. アイテム</a>
+    <ul>
+      <li><a href="06_items.html#06_item_rules"                          >6.1 アイテムに関するルール</a>
+        <ul>
+          <li><a href="06_items.html#06_overburden"                      >6.1.1 必要体力と超過重ペナルティ</a></li>
+          <li><a href="06_items.html#06_equipment_swap"                  >6.1.2 装備品の着脱</a></li>
+          <li><a href="06_items.html#06_item_damage"                     >6.1.3 アイテムの消耗と修理・製作</a></li>
+          <li><a href="06_items.html#06_item_trading"                    >6.1.4 アイテムの売買</a></li>
+          <li><a href="06_items.html#06_high_quality"                    >6.1.5 高品質な装備</a></li>
+        </ul>
+      </li>
+      <li><a href="06_items.html#06_equipment_data"                      >6.2 装備品データ</a>
+        <ul>
+          <li><a href="06_items.html#06_blunt_weapons"                   >6.2.1 打撃武器</a></li>
+          <li><a href="06_items.html#06_piercing_weapons"                >6.2.2 刺突武器</a></li>
+          <li><a href="06_items.html#06_slashing_weapons"                >6.2.3 斬撃武器</a></li>
+          <li><a href="06_items.html#06_bows"                            >6.2.4 弓</a></li>
+          <li><a href="06_items.html#06_crossbows"                       >6.2.5 クロスボウ</a></li>
+          <li><a href="06_items.html#06_slings"                          >6.2.6 スリング系武器</a></li>
+          <li><a href="06_items.html#06_matchlocks"                      >6.2.7 火縄銃</a></li>
+          <li><a href="06_items.html#06_blunt_shields"                   >6.2.8 打撃盾</a></li>
+          <li><a href="06_items.html#06_piercing_shields"                >6.2.9 刺突盾</a></li>
+          <li><a href="06_items.html#06_armor"                           >6.2.10 服・鎧</a></li>
+          <li><a href="06_items.html#06_species_weapons"                 >6.2.11 種族・スキル固有武器</a></li>
+        </ul>
+      </li>
+      <li><a href="06_items.html#06_general_items"                       >6.3 一般アイテムデータ</a>
+        <ul>
+          <li><a href="06_items.html#06_livestock_and_vehicles"          >6.3.1 家畜・車両・船舶</a></li>
+          <li><a href="06_items.html#06_lodging_and_food"                >6.3.2 宿代・食費</a></li>
+          <li><a href="06_items.html#06_lighting_items"                  >6.3.3 照明器具</a></li>
+          <li><a href="06_items.html#06_writing_tools"                   >6.3.4 筆記用具</a></li>
+          <li><a href="06_items.html#06_clothing_items"                  >6.3.5 衣類</a></li>
+          <li><a href="06_items.html#06_bags_and_containers"             >6.3.6 袋・容器</a></li>
+          <li><a href="06_items.html#06_general_goods"                   >6.3.7 雑貨</a></li>
+          <li><a href="06_items.html#06_food_and_supplies"               >6.3.8 食料等</a></li>
+          <li><a href="06_items.html#06_magic_items"                     >6.3.9 魔法の品物</a></li>
+          <li><a href="06_items.html#06_medical_items"                   >6.3.10 医療品</a></li>
+          <li><a href="06_items.html#06_tools"                           >6.3.11 工具類</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="07_adventure_rules.html#07_adventure_rules"                         >7. 冒険と日常行動</a>
+    <ul>
+      <li><a href="07_adventure_rules.html#07_adventure_timing"                    >7.1 冒険のタイムサイクルと行動単位
+        <ul>
+          <li><a href="07_adventure_rules.html#07_time_management"                 >7.1.1 時間管理</a></li>
+          <li><a href="07_adventure_rules.html#07_action_menu"                     >7.1.2 行動一覧</a></li>
+        </ul>
+      </li>
+      <li><a href="07_adventure_rules.html#07_adventure_actions"                   >7.2 冒険行動の基本と一般行為判定</a>
+        <ul>
+          <li><a href="07_adventure_rules.html#07_gathering_rules"                 >7.2.1 探索・採取・情報収集のルール</a></li>
+          <li><a href="07_adventure_rules.html#07_misc_actions"                    >7.2.2 その他の一般行為とシチュエーション例</a></li>
+        </ul>
+      </li>
+      <li><a href="07_adventure_rules.html#07_crafting_and_processing"             >7.3 製作と加工：ものを作る行動の共通処理
+        <ul>
+          <li><a href="#07_crafting_education"              >7.3.1 教育・訓練</a></li>
+          <li><a href="#07_crafting_cooking"                >7.3.2 調理・保存食</a></li>
+          <li><a href="#07_crafting_artisan"                >7.3.3 鍛冶・木工・石工・裁縫</a></li>
+          <li><a href="#07_crafting_alchemy"                >7.3.4 製薬・魔導器具</a></li>
+          <li><a href="07_adventure_rules.html#07_crafting_repair"                 >7.3.5 修理と再利用</a></li>
+        </ul>      
+      </li>
+      <li><a href="07_adventure_rules.html#07_adventure_travel"                    >7.4 移動と環境の影響</a>
+        <ul>
+          <li><a href="07_adventure_rules.html#07_environmental_effects"           >7.4.1 地形効果</a></li>
+          <li><a href="07_adventure_rules.html#07_weather_effects"                 >7.4.2 気温と天候</a></li>
+          <li><a href="07_adventure_rules.html#07_hardline"                        >7.4.3 強行軍</a></li>
+          <li><a href="07_adventure_rules.html#07_night_movement"                  >7.4.4 夜間移動ルール</a></li>
+          <li><a href="07_adventure_rules.html#07_water_travel"                    >7.4.5 水上・水中の移動</a></li>
+          <li><a href="07_adventure_rules.html#07_mounted_travel"                  >7.4.6 騎乗と乗り物移動</a></li>
+          <li><a href="07_adventure_rules.html#07_aerial_travel"                   >7.4.7 飛行移動</a></li>
+        </ul>
+      </li>
+      <li><a href="07_adventure_rules.html#07_adventure_rest"                      >7.5 食事・休憩・睡眠と回復</a></li>
+      <li><a href="#07_adventure_economy"                   >7.6 金銭・買い物・経済活動</a></li>
+    </ul>
+  </li>
+  <li><a href="08_combat_rules.html#08_combat_rules"                            >8. 戦闘ルール</a>
+    <ul>
+      <li><a href="08_combat_rules.html#08_combat_start_preparation"            >8.1 戦闘の開始と準備</a></li>
+      <li><a href="08_combat_rules.html#08_action_points"                       >8.2 戦闘時の行動</a>
+        <ul>
+          <li><a href="08_combat_rules.html#08_ap0_actions"                     >8.2.1 AP0の行動</a></li>
+          <li><a href="08_combat_rules.html#08_ap1_actions"                     >8.2.2 AP1の行動</a></li>
+          <li><a href="08_combat_rules.html#08_ap2_actions"                     >8.2.3 AP2の行動</a></li>
+          <li><a href="08_combat_rules.html#08_ap3_actions"                     >8.2.4 AP3の行動</a></li>
+        </ul>
+      </li>
+      <li><a href="08_combat_rules.html#08_movement"                            >8.3 戦闘時の移動</a>
+        <ul>
+          <li><a href="08_combat_rules.html#08_zoc"                             >8.3.1 Zone of Control (ZOC)</a></li>
+          <li><a href="08_combat_rules.html#08_dash"                            >8.3.2 疾走</a></li>
+          <li><a href="08_combat_rules.html#08_jump"                            >8.3.3 跳躍</a></li>
+          <li><a href="08_combat_rules.html#08_climbing"                        >8.3.4 登攀移動</a></li>
+          <li><a href="08_combat_rules.html#08_combat_in_water"                 >8.3.5 水上・水中の戦闘</a></li>
+          <li><a href="08_combat_rules.html#08_combat_mounted"                  >8.3.6 騎乗戦闘</a></li>
+          <li><a href="08_combat_rules.html#08_flight_and_altitude"             >8.3.7 飛行と高度</a></li>
+          <li><a href="08_combat_rules.html#08_crawling_position"               >8.3.8 姿勢と戦闘補正</a></li>
+        </ul>
+      </li>
+      <li><a href="08_combat_rules.html#08_attack_damage"                       >8.4 攻撃とダメージ</a>
+        <ul>
+          <li><a href="08_combat_rules.html#08_attack_flow"                     >8.4.1 攻撃処理</a></li>
+          <li><a href="08_combat_rules.html#08_defence_flow"                    >8.4.2 防御処理</a></li>
+        </ul>
+      </li>
+      <li><a href="08_combat_rules.html#08_grapple"                             >8.5 組み付き格闘</a></li>
+        <ul>
+          <li><a href="08_combat_rules.html#08_grapple_hit"                     >8.5.1 組み付きの命中</a></li>
+          <li><a href="08_combat_rules.html#08_grapple_hold"                    >8.5.2 拘束の効果</a></li>
+          <li><a href="08_combat_rules.html#08_grapple_throw"                   >8.5.3 投げの効果（Slamおよび拘束中）</a></li>
+        </ul>
+      <li><a href="08_combat_rules.html#08_falling_damage"                      >8.6 転倒と落下ダメージ</a></li>
+    </ul>
+  </li>
+  <li><a href="09_character_status.html#09_character_status"                        >9. キャラクターのステータス</a>
+    <ul>
+      <li><a href="09_character_status.html#09_incapacitation_death"                >9.1 戦闘不能と死亡</a></li>
+      <li><a href="09_character_status.html#09_status_conditions"                   >9.2 状態異常と持続効果</a></li>
+      <li><a href="09_character_status.html#09_ailments"                            >9.3 不調</a></li>
+      <li><a href="09_character_status.html#09_lasting_effects"                     >9.4 持続効果</a></li>
+      <li><a href="09_character_status.html#09_injury"                              >9.5 負傷</a>
+        <ul>
+          <li><a href="09_character_status.html#09_injury_roll"                     >9.5.1 負傷ロールと負傷の記録</a></li>
+          <li><a href="09_character_status.html#09_injury_effect"                   >9.5.2 負傷による影響</a></li>
+          <li><a href="09_character_status.html#09_injury_recovery"                 >9.5.3 負傷の回復</a></li>
+        </ul>
+      </li>
+      <li><a href="09_character_status.html#09_limb_regeneration"                   >9.6 欠損部位の回復と義肢</a>
+        <ul>
+          <li><a href="09_character_status.html#09_limb_loss_and_regeneration"      >9.6.1 欠損と再生</a></li>
+          <li><a href="09_character_status.html#09_prosthetic_limbs"                >9.6.2 義肢</a></li>
+        </ul>
+      </li>
+      <li><a href="09_character_status.html#09_stress_accumulation"                 >9.7 ストレス蓄積値と感情効果</a></li>
+    </ul>
+  </li>
+  <li><a href="10_world_guide.html#10_world_guide"                             >10. ワールドガイド</a>
+    <ul>
+      <li><a href="10_world_guide.html#10_magic_region_overview"               >10.1 Magic Regionとは（世界概要）</a></li>
+      <li><a href="10_world_guide.html#10_civilization_level"                  >10.2 文明・経済・技術レベル</a></li>
+      <li><a href="10_world_guide.html#10_magic_region_calendar"               >10.3 Magic Regionの暦</a></li>
+      <li><a href="10_world_guide.html#10_magic_region_gods"                   >10.4 Magic Regionの神々</a></li>
+      <li><a href="10_world_guide.html#10_geography_climate"                   >10.5 地形と気候</a></li>
+      <li><a href="10_world_guide.html#10_leor_duchy"                          >10.6 レオール公国（主要国家①）</a></li>
+      <li><a href="10_world_guide.html#10_neighboring_countries"               >10.7 周辺の国家（主要国家②）</a></li>
+      <li><a href="10_world_guide.html#10_species_distribution"                >10.8 種族ごとの職業分布（種族文化まとめ）</a></li>
+      <li><a href="10_world_guide.html#10_pollution_and_mutants"               >10.9 汚染地帯と異形生物</a></li>
+      <li><a href="10_world_guide.html#10_interworld_gates"                    >10.10 異世界ゲートと幻獣</a></li>
+    </ul>
+  </li>
+  <li><a href="11_enemy_data.html#11_enemy_data"                              >11. 敵データ</a>
+    <ul>
+      <li><a href="11_enemy_data.html#11_enemy_data_requirements"             >11.1 エネミーデータの必須項目</a></li>
+      <li><a href="11_enemy_data.html#11_enemy_data_conversion"               >11.2 旧バージョンからの変換ルール</a>
+        <ul>
+          <li><a href="11_enemy_data.html#11_conversion_rules"                >11.2.1 変換ルール詳細</a></li>
+          <li><a href="11_enemy_data.html#11_additional_rules"                >11.2.2 補完ルール</a></li>
+        </ul>
+      </li>
+      <li><a href="11_enemy_data.html#11_enemy_data_samples"                  >11.3 サンプルエネミーデータ</a>
+        <ul>
+          <li><a href="11_enemy_data.html#11_zombie_sample">11.3.1 ゾンビ</a></li>
+          <li><a href="11_enemy_data.html#11_lesser_vampire_sample">11.3.2 レッサーバンパイア</a></li>
+          <li><a href="11_enemy_data.html#11_goblin_warrior_sample">11.3.3 ゴブリン戦士</a></li>
+          <li><a href="11_enemy_data.html#11_lesser_dragon_red_sample">11.3.4 レッサードラゴンレッド</a></li>
+          <li><a href="11_enemy_data.html#11_minotaur_sample">11.3.5 ミノタウロス</a></li>
+          <li><a href="11_enemy_data.html#11_gargoyle_sample">11.3.6 ガーゴイル</a></li>
+          <li><a href="11_enemy_data.html#11_lich_sample">11.3.7 リッチ</a></li>
+          <li><a href="11_enemy_data.html#11_no_life_king_sample">11.3.8 ノーライフキング</a></li>
+          <li><a href="11_enemy_data.html#11_hellhound_sample">11.3.9 ヘルハウンド</a></li>
+          <li><a href="11_enemy_data.html#11_manticore_sample">11.3.10 マンティコア</a></li>
+          <li><a href="11_enemy_data.html#11_elder_dragon_red_sample">11.3.11 エルダードラゴンレッド</a></li>
+          <li><a href="11_enemy_data.html#11_fenrir_sample">11.3.12 フェンリル</a></li>
+          <li><a href="11_enemy_data.html#11_cerberus_sample">11.3.13 ケルベロス</a></li>
+          <li><a href="11_enemy_data.html#11_ogre_sample">11.3.14 オーガ</a></li>
+          <li><a href="11_enemy_data.html#11_goblin_lord_sample">11.3.15 ゴブリンロード</a></li>
+          <li><a href="11_enemy_data.html#11_cyclops_sample">11.3.16 サイクロプス</a></li>
+          <li><a href="11_enemy_data.html#11_giant_sample">11.3.17 ジャイアント</a></li>
+          <li><a href="11_enemy_data.html#11_basilisk_sample">11.3.18 バジリスク</a></li>
+          <li><a href="11_enemy_data.html#11_mimic_sample">11.3.19 ミミック</a></li>
+          <li><a href="11_enemy_data.html#11_yeti_sample">11.3.20 イエティ</a></li>
+          <li><a href="11_enemy_data.html#11_sphinx_sample">11.3.21 スフィンクス</a></li>
+          <li><a href="11_enemy_data.html#11_hydra_sample">11.3.22 ヒドラ</a></li>
+          <li><a href="11_enemy_data.html#11_golem_sample">11.3.23 ゴーレム</a></li>
+          <li><a href="11_enemy_data.html#11_wyvern_sample">11.3.24 ワイバーン</a></li>
+          <li><a href="11_enemy_data.html#11_chimera_sample">11.3.25 キメラ</a></li>
+          <li><a href="11_enemy_data.html#11_demon_sample">11.3.26 デーモン</a></li>
+          <li><a href="11_enemy_data.html#11_salamander_sample">11.3.27 サラマンダー</a></li>
+          <li><a href="11_enemy_data.html#11_phoenix_sample">11.3.28 フェニックス</a></li>
+          <li><a href="11_enemy_data.html#11_leviathan_sample">11.3.29 リヴァイアサン</a></li>
+          <li><a href="11_enemy_data.html#11_griffon_sample">11.3.30 グリフォン</a></li>
+          <li><a href="11_enemy_data.html#11_mandrake_sample">11.3.31 マンドレイク</a></li>
+          <li><a href="11_enemy_data.html#11_titan_sample">11.3.32 タイタン</a></li>
+          <li><a href="11_enemy_data.html#11_unicorn_sample">11.3.33 ユニコーン</a></li>
+          <li><a href="11_enemy_data.html#11_pegasus_sample">11.3.34 ペガサス</a></li>
+          <li><a href="11_enemy_data.html#11_dragon_zombie_sample">11.3.35 ドラゴンゾンビ</a></li>
+          <li><a href="11_enemy_data.html#11_lizardman_lv0_sample">11.3.36 リザードマン (Lv0)</a></li>
+          <li><a href="11_enemy_data.html#11_lizardman_lv1_sample">11.3.37 リザードマン (Lv1)</a></li>
+          <li><a href="11_enemy_data.html#11_lizardman_lv3_sample">11.3.38 リザードマン (Lv3)</a></li>
+          <li><a href="11_enemy_data.html#11_lizardman_lv5_sample">11.3.39 リザードマン (Lv5)</a></li>
+          <li><a href="11_enemy_data.html#11_giant_rat_sample">11.3.40 大ネズミ</a></li>
+          <li><a href="11_enemy_data.html#11_giant_bat_sample">11.3.41 ジャアントバット</a></li>
+          <li><a href="11_enemy_data.html#11_pig_sample">11.3.42 ブタ</a></li>
+          <li><a href="11_enemy_data.html#11_warhorse_sample">11.3.43 軍馬</a></li>
+          <li><a href="11_enemy_data.html#11_bear_cub_sample">11.3.44 子熊</a></li>
+          <li><a href="11_enemy_data.html#11_bear_sample">11.3.45 熊</a></li>
+          <li><a href="11_enemy_data.html#11_grizzly_sample">11.3.46 グリズリー</a></li>
+          <li><a href="11_enemy_data.html#11_crow_sample">11.3.47 カラス</a></li>
+          <li><a href="11_enemy_data.html#11_giant_slug_sample">11.3.48 オオナメクジ</a></li>
+          <li><a href="11_enemy_data.html#11_parasitic_fly_sample">11.3.49 寄生バエ</a></li>
+          <li><a href="11_enemy_data.html#11_parasitic_maggot_sample">11.3.50 寄生蛆</a></li>
+          <li><a href="11_enemy_data.html#11_hornet_sample">11.3.51 スズメバチ</a></li>
+          <li><a href="11_enemy_data.html#11_giant_mantis_sample">11.3.52 オオカマキリ</a></li>
+          <li><a href="11_enemy_data.html#11_scorpion_sample">11.3.53 スコーピオン</a></li>
+          <li><a href="11_enemy_data.html#11_giant_centipede_sample">11.3.54 巨大ムカデ</a></li>
+          <li><a href="11_enemy_data.html#11_crocodile_sample">11.3.55 ワニ</a></li>
+          <li><a href="11_enemy_data.html#11_enemy_red_elder_dragon">11.3.56 レッドエルダードラゴン</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="12_traps_and_disasters.html#12_traps_and_disasters"                     >12. トラップと自然災害</a>
+    <ul>
+      <li><a href="12_traps_and_disasters.html#12_trap_and_disaster_requirements"      >12.1 データ項目</a></li>
+      <li><a href="12_traps_and_disasters.html#12_trap_and_disaster_samples"           >12.2 サンプルデータ</a>
+        <ul>
+          <li><a href="12_traps_and_disasters.html#12_trap_sample_1"                   >12.2.1 落とし穴トラップ</a></li>
+          <li><a href="12_traps_and_disasters.html#12_trap_sample_2"                   >12.2.2 毒矢の罠</a></li>
+          <li><a href="12_traps_and_disasters.html#12_trap_sample_3"                   >12.2.3 魔法炎の結界</a></li>
+          <li><a href="12_traps_and_disasters.html#12_disaster_sample_1"               >12.2.4 吹雪</a></li>
+          <li><a href="12_traps_and_disasters.html#12_disaster_sample_2"               >12.2.5 落雷</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="13_designer_notes.html#13_designer_notes"                          >13. デザイナー向け設計メモ</a>
+    <ul>
+      <li><a href="13_designer_notes.html#13_easier_to_enjoy"                     >13.1 世界を遊びやすくするために </a></li>
+      <li><a href="13_designer_notes.html#13_type_design_principles"              >13.2 タイプ設計の原則</a></li>
+      <li><a href="13_designer_notes.html#13_geography_design_notes"              >13.3 地形設計と違和感管理</a></li>
+      <li><a href="13_designer_notes.html#13_diagonal_3m_reason"                  >13.4 移動距離と「斜め3m」ルールの理由</a></li>
+    </ul>
+  </li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   序章：はじめに
+--------------------------------------------------------------------------------------------------->
+<h2 id="00_introduction">序章：はじめに</h2>
+<p>『EFA Lite』は、ファンタジー世界を舞台にした戦闘重視のテーブルトークRPGです。本ルールブックは、短時間で遊べる中量級のゲームとして、初めてTRPGを遊ぶ方からルールに慣れた方まで手軽に楽しめるよう設計されています。</p>
+<p>このゲームの特徴は、数値規模が非常に小さい点です。キャラクターのHP・MP・能力値・ダメージ・回復量は1〜6程度で構成され、1点の差が大きな影響を持つ繊細なバランスを目指しています。そのため、他のTRPGに見られる「ポーションで1d8回復」や「攻撃で2桁ダメージ」といったスケールとは異なり、1点の回復やダメージが実用的で重要な判断材料となります。</p>
+<p>判定には6面ダイス（d6）を使用し、「下方ロール」（低い目が有利）方式を採用しています。ゲーム内のアイテム、スキル、魔法の効果もこの設計に合わせて調整されていますので、一般的なTRPGのスケールとの違いにご留意ください。</p>
+<p>本書では、GM裁量を減らし一貫したゲーム体験を提供するため、ルールを細かく記述しています。ただし、『Lite』を名乗る通り手軽さを重視しており、細かいルールが却って足かせになる場合は、『GM裁量で』これらを簡略化したり無視したりして構いません。遊びやすさを最優先に、あなたの卓に合った形で楽しんでください。</p>
+<p>本書では、基本ルールの説明から始まり、キャラクター作成、スキル、魔法、冒険ルール、戦闘ルール、世界観へと順に紹介していきます。</p>
+
+<hr>
+<!--------------------------------------------------------------------------------------------------
+-   ライセンスと利用条件
+--------------------------------------------------------------------------------------------------->
+<h2 id="00_license">ライセンスと利用条件</h2>
+<p>本ルールブック『EFA Lite』は <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">GNU General Public License v3</a> のもとで公開されています。</p>
+
+<h4>■ GPL v3 ライセンス概要</h4>
+<ul>
+  <li>このルールブックは<strong>誰でも無料で利用・改変・再配布</strong>することができます。</li>
+  <li>ただし、<strong>改変物や派生作品を配布する場合</strong>、その成果物も<strong>GPL v3と同じライセンス</strong>で公開する必要があります。</li>
+  <li>ルールやドキュメントに含まれる<strong>著作権表示やライセンス表記は削除しないでください。</strong></li>
+  <li>このルールブックを使ったことで発生した損害や問題について、<strong>著作者は一切責任を負いません。</strong></li>
+</ul>
+
+<p>
+Copyright (c) 2025 <strong>上野・シェヘラザード・遥 (Haruka Sheherazade Ueno)</strong><br>
+This program is free software: you can redistribute it and/or modify<br>
+it under the terms of the GNU General Public License as published by<br>
+the Free Software Foundation, either version 3 of the License, or<br>
+(at your option) any later version.<br>
+See: <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">https://www.gnu.org/licenses/gpl-3.0.html</a>
+</p>
+
+<!--
+【dランクの定義（AI処理用）】
+
+・dランク（dice rank）は「1〜x」の範囲を等確率でとる乱数。ランク値xに対してdランクxと呼ぶ。
+・例：dランク2 = 1〜2、dランク6 = 1〜6、dランク7 = 1〜7、dランク8 = 1〜8
+・dランク0 = 1〜0 = 0〜1（d2−1相当）、数学的に特例ではない
+・負のランクも定義可能（例：dランク−3 = −3〜1）
+
+⚠ よくある誤解に注意：
+・dランクは「使用するダイスの種類」ではなく「出目範囲」によって定義される。
+・dランク4の次はdランク5（1〜5）であり、d6（1〜6）ではない。
+・dランク5や7は「d6やd8を使って出目を制限する」などで実現できる。
+・D&D等の「ダイスの面数が増えるとランクが上がる」という考え方は適用しない。
+-->
+<!--#FOOTER_START-->
+</body>
+</html>

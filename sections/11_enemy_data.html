@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<!--
+【AI向け注釈】
+本ルールブックで使用される「dランク（dice rank）」は、出目の範囲「1〜x」の乱数を振る処理を指します。dランクxとは「1〜x」の出目をとる乱数であり、dランク3＝d3（1〜3）、dランク5＝d6（1〜6）を意味します。dランク0は例外ではなく「1〜0」すなわち0〜1の範囲の乱数を意味します。また、dランク7はd7（1〜7）を、dランク8はd8（1〜8）を意味し、これは別ランクとして扱われます。理論上は負のランク（例：dランク−100＝−100〜1）も定義可能です。
+
+【追加：判定方式の統一】
+「EFA Lite」では、処理高速化のためすべての判定を下方ロール（d6、目標値以下で成功）に統一しています。旧版「EFA」で使用されていた上方ロール（例: 2d6、難易度以上で成功）は廃止されました。以下の点に注意してください：
+- ルールブック内で「2d6」「上方ロール」「難易度X以上」などの記述を見つけた場合、下方ロールに変換。
+- 変換例：
+  - 旧: 「2d6+敏捷、難易度10、1段階不利」→ 新: 「敏捷+補正（通常+2）、d6×2（1段階有利）」
+  - 旧: 「2d6+知性、難易度12」→ 新: 「知性+補正（通常+2、難易度高で+1）、d6」
+- ⚠ 混同しないでください：上方ロールの「クリティカル（12）」や「ファンブル（2）」は下方ロールでは適用されません。
+
+【追加：HTML整形ルール】
+このルールブックはAI整形対応のため、以下のHTML構造を前提としています：
+- <h2>〜</h2>、<h3>〜</h3>、<h4>〜</h4>、<h4>〜</h4>、<p>〜</p> は、それぞれ1行にまとまっている。
+- </p> の後の改行は保持するが、他の閉じタグの直後には原則改行を入れない。
+- <tr><th>...</th></tr>、<tr><td>...</td></tr> は1行に収める。
+- <table>内の<br>の直後の改行は削除するが、テーブル外の<br>には改行を残す。
+
+【追加：誤解されやすい点のQ&A】
+Q1. 「飛行キャラクター」とは「飛行中のキャラ」のこと？
+→ いいえ。「飛行可能なキャラクター」と「飛行中のキャラクター」は明確に区別されます。
+
+Q2. 窒息スロットは「蓄積3で1スロット」？
+→ いいえ。窒息は蓄積値で管理され、「体力+2」以上で発症します。
+
+Q3. 飛行中に攻撃などの行動をすると、さらに窒息がたまる？
+→ いいえ。ホバリングや飛行移動でAPを支払っていれば、それ以上の窒息は発生しません。
+
+Q4. 滑空は飛行状態ではない？
+→ いいえ。滑空は飛行状態の一部であり、行動制限も飛行中として扱われます。
+
+Q5. 窒息が発症してもすぐ治る？
+→ いいえ。蓄積値が0になるまでAP−1の効果は継続します。
+
+-->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/efa_lite.css">
+<title>EFA Lite ルールブック</title>
+</head>
+<body>
+<div id="topbar"><a href="00_toc.html#00_toc">目次へ戻る</a></div>
+<!--#HEADER_END-->
+<!--------------------------------------------------------------------------------------------------
+-   11. 敵データ
+--------------------------------------------------------------------------------------------------->
+<h1 id="11_enemy_data">11. 敵データ</h1>
+<p>　このセクションでは、戦闘テストプレイ用のエネミーデータを作成するためのガイドラインと、旧バージョンから新バージョンへの変換ルールを記述します。新バージョンの戦闘ルール（「<a href="08_combat_rules.html#08_combat_rules">8. 戦闘ルール</a>」）およびキャラクターのステータス（「<a href="09_character_status.html#09_character_status">9. キャラクターのステータス</a>」）に基づき、プレイヤーキャラクター（PC）と対等に戦闘を進行させるデータを提供します。</p>
+<!--------------------------------------------------------------------------------------------------
+-   11.1 エネミーデータの必須項目
+--------------------------------------------------------------------------------------------------->
+<h2 id="11_enemy_data_requirements">11.1 エネミーデータの必須項目</h2>
+<p>以下の項目は、新バージョンの戦闘ルールを適用する上で最低限必要なデータです。</p>
+<ul>
+    <li><strong>名称 (Name)</strong>: エネミーの識別名。</li>
+    <li><strong>体力 (Strength)</strong>: 命中判定や超過重ペナルティの基準値。</li>
+    <li><strong>敏捷 (Agility)</strong>: イニシアティブ、移動距離、回避率の基準値。</li>
+    <li><strong>知性 (Intelligence)</strong>: 魔法防御率や魔法発動判定の基準値。</li>
+    <li><strong>HP (Hit Points)</strong>: 戦闘不能や死亡の判定基準。</li>
+    <li><strong>AP (Action Points)</strong>: ターンごとの行動量。基本値は3。</li>
+    <li><strong>攻撃手段 (Attack Method)</strong>: 
+        <ul>
+            <li>攻撃種別: 白兵、投擲、射撃など。</li>
+            <li>命中率: 武器の命中率 + MAX(体力, 敏捷)。</li>
+            <li>威力: 通常/会心のダメージ（例: 1/d2）。</li>
+            <li>範囲: 間合/射程（例: 2m/-）。</li>
+            <li>属性: 打撃、刺突、斬撃など。</li>
+        </ul>
+    </li>
+    <li><strong>防御 (Defense)</strong>: 防御率/1（防御点は1固定）。</li>
+    <li><strong>回避率 (Dodge Rate)</strong>: ドッジ時の判定基準（通常は敏捷-1）。</li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   11.2 旧バージョンからの変換ルール
+--------------------------------------------------------------------------------------------------->
+<h2 id="11_enemy_data_conversion">11.2 旧バージョンからの変換ルール</h2>
+<p>旧バージョンのエネミーデータを新バージョンに変換する際のルールを以下に示します。旧データの一部欠落を補うため、「<a href="13_designer_notes.html#13_designer_notes">13. デザイナー向け設計メモ</a>」のトレードオフ原則を活用します。また、防御点は1に固定し、「全魔法Lv1」は「魔術師魔法Lv1」「僧侶魔法Lv1」「精霊魔法Lv1」の3系統を意味します。</p>
+<!--------------------------------------------------------------------------------------------------
+-   11.2.1 変換ルール詳細
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_conversion_rules">11.2.1 変換ルール詳細</h3>
+
+<ul>
+    <li><strong>名称 (Name)</strong>: 旧「名称」をそのまま使用。</li>
+    <li><strong>体力 (Strength)</strong>: 
+        <ul>
+            <li>基準値: 「Lv÷2（切り上げ）」。</li>
+            <li>FSまたはPWがLvより+2以上高い場合+1、低い場合-1。</li>
+            <li>合計能力値（体力+敏捷+知性）が3を超えないよう調整。</li>
+        </ul>
+    </li>
+    <li><strong>敏捷 (Agility)</strong>: 
+        <ul>
+            <li>旧「In」記載時: In+1。</li>
+            <li>空欄: 旧0→新1。</li>
+        </ul>
+    </li>
+    <li><strong>知性 (Intelligence)</strong>: 
+        <ul>
+            <li>MP空欄かつ魔法なし: 0。</li>
+            <li>MPあり: 「MP÷5（切り上げ）」。</li>
+            <li>「全魔法LvX」あり: Lv1で知性2、Lv2で3など。</li>
+        </ul>
+    </li>
+    <li><strong>HP (Hit Points)</strong>: 旧「LP」÷4。</li>
+    <li><strong>AP (Action Points)</strong>: 基本値3。敏捷2以上で+1、特殊能力で調整。</li>
+    <li><strong>攻撃手段 (Attack Method)</strong>: 
+        <ul>
+            <li>攻撃種別: 備考から推測（例: 「ナイフ」→白兵）。</li>
+            <li>命中率: FS + MAX(体力, 敏捷)。</li>
+            <li>威力: PWを変換（4以下: d(0～1)、5-6: 1/d2、7-8: d2/d3、9-10: d3/d4）。会心は1ランクアップ。</li>
+            <li>範囲: 備考から推測（白兵: 2m/-、投擲: 2m/10m、射撃: 20m）。</li>
+            <li>属性: 備考から判断（例: 「炎ブレス」→火）。</li>
+        </ul>
+    </li>
+    <li><strong>防御 (Defense)</strong>: 
+        <ul>
+            <li>防御率: 旧「AC」×2（4以上は6に固定）。</li>
+            <li>防御点: 1（固定）。</li>
+        </ul>
+    </li>
+    <li><strong>回避率 (Dodge Rate)</strong>: 
+        <ul>
+            <li>旧「DE」を基本値とし、敏捷-1と比較して低い方を採用。</li>
+            <li>DEがACより高い場合、盾とみなし敏捷-1。</li>
+        </ul>
+    </li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   11.2.2 補完ルール
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_additional_rules">11.2.2 補完ルール</h3>
+
+<ul>
+    <li><strong>魔法防御率</strong>: 知性×2+1。旧「抵」がLv+9以上の場合+1。</li>
+    <li><strong>特殊能力</strong>: 備考を新ルールに変換（例: 「猛毒1(4)」→麻痺毒 蓄積値4、「全魔法Lv1」→魔術師/僧侶/精霊魔法Lv1）。</li>
+    <li><strong>装備品</strong>: 備考から「<a href="06_items.html#06_equipment_data">6.2 装備品データ</a>」を引用。</li>
+    <li><strong>行動パターン</strong>: 備考から推測（例: 「飛行」→回避重視）。</li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   11.3 サンプルエネミーデータ
+--------------------------------------------------------------------------------------------------->
+<h2 id="11_enemy_data_samples">11.3 サンプルエネミーデータ</h2>
+<p>以下に、旧データから変換したサンプルエネミーを示します。</p>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.1 ゾンビ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_zombie_sample">11.3.1 ゾンビ</h3>
+<p><strong>旧データ</strong>: Lv1, 抵5, 名称: ゾンビ, In-1, LP8, MP空欄, FS4, PW5, CH空欄, DE0, AC0, 備考: 猛毒1(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ゾンビ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>FS4/PW5がLv1より高い</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>2</td><td>LP8÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率6 (FS4+体力2)、威力1/d2 (PW5)、範囲2m/-、打撃</td><td>-</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷0で構えなし</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>麻痺毒 蓄積値4</td><td>「猛毒1(4)」を変換</td></tr>
+    <tr><td>行動パターン</td><td>近接攻撃優先</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.2 レッサーバンパイア
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lesser_vampire_sample">11.3.2 レッサーバンパイア</h3>
+<p><strong>旧データ</strong>: Lv2, 抵6, 名称: レッサーバンパイア, In空欄, LP15, MP7, FS空欄, PW空欄, CH空欄, DE1, AC0, 備考: 全魔法Lv1</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>レッサーバンパイア</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv2÷2, FS/PWなし</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→旧0、新1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP7÷5=2, 魔法使用を考慮</td></tr>
+    <tr><td>HP</td><td>4</td><td>LP15÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率3 (仮FS3+体力1)、威力1/d2 (仮PW5)、範囲2m/-、打撃</td><td>FS/PW未指定のため仮定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE1, 敏捷1で構えなしと一致</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>魔術師魔法Lv1、僧侶魔法Lv1、精霊魔法Lv1</td><td>「全魔法Lv1」を変換</td></tr>
+    <tr><td>行動パターン</td><td>魔法優先、近接は補助</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.3 ゴブリン戦士
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_goblin_warrior_sample">11.3.3 ゴブリン戦士</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: ゴブリン戦士, In空欄, LP19, MP空欄, FS4, PW6, CH空欄, DE2, AC1, 備考: 脱力(4)、トマホーク、Sシールド</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ゴブリン戦士</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS4/PW6はLv3+1/+3で+1未満</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP19÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>投擲、命中率5 (FS4+体力2、「トマホーク」命中率-1補正後)、威力1/d2 (PW6)、範囲2m/10m、斬撃</td><td>6.2「トマホーク」参照</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>脱力 蓄積値4</td><td>「脱力(4)」を変換</td></tr>
+    <tr><td>装備品</td><td>トマホーク、スモールシールド</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>投擲攻撃後近接へ移行</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.4 レッサードラゴンレッド
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lesser_dragon_red_sample">11.3.4 レッサードラゴンレッド</h3>
+<p><strong>旧データ</strong>: Lv6, 抵10, 名称: レッサードラゴンレッド, In空欄, LP68, MP空欄, FS8, PW11, CH捕, DE0, AC4, 備考: 爪：ch掴み炎ブレス3、噛みつき（FS7/PW12）、尻尾（FS7/PW12）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>レッサードラゴンレッド</td><td>-</td></tr>
+    <tr><td>体力</td><td>4</td><td>Lv6÷2=3, FS8/PW11はLv6+2/+5で+1</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>17</td><td>LP68÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        爪（白兵、命中率12 (FS8+体力4)、威力d3/d4 (PW11)、範囲2m/-、斬撃）<br/>        噛みつき（白兵、命中率11 (FS7+体力4)、威力d4/d5 (PW12)、範囲2m/-、刺突）<br/>        尻尾（白兵、命中率11 (FS7+体力4)、威力d4/d5 (PW12)、範囲3m/-、打撃）<br/>        炎ブレス（射撃、命中率8 (仮定)、威力d2/d3、範囲10m、火属性）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC4×2=8だが6に固定</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>掴み（捕縛相当）、炎ブレス（燃焼 蓄積値3）</td><td>「ch掴み」「炎ブレス3」を変換</td></tr>
+    <tr><td>行動パターン</td><td>爪で掴み→噛みつき→炎ブレス優先</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.5 ミノタウロス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_minotaur_sample">11.3.5 ミノタウロス</h3>
+<p><strong>旧データ</strong>: Lv7, 抵11, 名称: ミノタウロス, In-1, LP67, MP空欄, FS4, PW11, CH空欄, DE空欄, AC空欄, 備考: グレートアクス、体当たり（FS5/PW10）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ミノタウロス</td><td>-</td></tr>
+    <tr><td>体力</td><td>4</td><td>Lv7÷2=4, FS4/PW11はLv7-3/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>17</td><td>LP67÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        グレートアクス（白兵、命中率7 (FS4+体力4、「グレートアクス」命中率-1補正後)、威力d3/d4 (PW11)、範囲2m/-、斬撃）<br/>        体当たり（白兵、命中率9 (FS5+体力4)、威力d3/d4 (PW10)、範囲2m/-、打撃）
+    </td><td>6.2「グレートアクス」参照</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC空欄→0</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE空欄, 敏捷0-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>装備品</td><td>グレートアクス</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>グレートアクスで攻撃→体当たりで追撃</td><td>-</td></tr>
+</table>
+
+<p class="note">※攻撃手段のFS/PWが未指定の場合、Lvに応じた標準値（例: Lv2ならFS4/PW5）を仮定。魔法はテストプレイで代表的なものをGMが選択（例: 魔術師「ファイアボルト」、僧侶「ヒール」、精霊「ウインドカッター」）。</p>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.6 ガーゴイル
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_gargoyle_sample">11.3.6 ガーゴイル</h3>
+<p><strong>旧データ</strong>: Lv2, 抵6, 名称: ガーゴイル, In1, LP15, MP空欄, FS6, PW4, CH空欄, DE2, AC2, 備考: 飛行、ジャベリン、スモールシールド</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ガーゴイル</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv2÷2=1, FS6/PW4はLv2+4/+2だが合計3制約</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>4</td><td>LP15÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>投擲、命中率7 (FS6+敏捷2、「ジャベリン」命中率-1補正後)、威力d(0～1)/1 (PW4)、範囲2m/15m、刺突</td><td>6.2「ジャベリン」参照</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE2, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行</td><td>地形無視（8.4参照）</td></tr>
+    <tr><td>装備品</td><td>ジャベリン、スモールシールド</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>飛行で距離を取り投擲攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.7 リッチ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lich_sample">11.3.7 リッチ</h3>
+<p><strong>旧データ</strong>: Lv8, 抵12, 名称: リッチ, In-1, LP51, MP27, FS6, PW8, CH空欄, DE2, AC2, 備考: 全魔法Lv5、カース1(12)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リッチ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv8÷2=4だがFS6/PW8はLv8-2/±0で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>3</td><td>MP27÷5=6だが全魔法Lv5で3に調整</td></tr>
+    <tr><td>HP</td><td>13</td><td>LP51÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS6+体力2)、威力d2/d3 (PW8)、範囲2m/-、打撃</td><td>武器未指定のため仮定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE2だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>7</td><td>知性3×2+1</td></tr>
+    <tr><td>特殊能力</td><td>魔術師魔法Lv5、僧侶魔法Lv5、精霊魔法Lv5、カース 蓄積値12</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>魔法で広範囲攻撃→近接は最終手段</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.8 ノーライフキング
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_no_life_king_sample">11.3.8 ノーライフキング</h3>
+<p><strong>旧データ</strong>: Lv10, 抵15, 名称: ノーライフキング, In空欄, LP61, MP33, FS6, PW8, CH空欄, DE2, AC3, 備考: カース5(14)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ノーライフキング</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv10÷2=5だがFS6/PW8はLv10-4/-2で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>3</td><td>MP33÷5=7だが調整</td></tr>
+    <tr><td>HP</td><td>15</td><td>LP61÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS6+体力2)、威力d2/d3 (PW8)、範囲2m/-、打撃</td><td>武器未指定のため仮定</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>7</td><td>知性3×2+1</td></tr>
+    <tr><td>特殊能力</td><td>カース 蓄積値14</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>カースで弱体化後近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.9 ヘルハウンド
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_hellhound_sample">11.3.9 ヘルハウンド</h3>
+<p><strong>旧データ</strong>: Lv4, 抵8, 名称: ヘルハウンド, In2, LP26, MP空欄, FS5, PW7, CH空欄, DE3, AC1, 備考: 受け側回避6で燃焼、炎ブレス(3)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ヘルハウンド</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv4÷2=2, FS5/PW7はLv4+1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>7</td><td>LP26÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS5+敏捷3)、威力d2/d3 (PW7)、範囲2m/-、刺突<br/>炎ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、火属性）</td><td>噛みつきと炎ブレス</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>2</td><td>DE3, 敏捷3-1=2で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>燃焼（回避6以上で発動）、炎ブレス（燃焼 蓄積値3）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>炎ブレスで牽制→近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.10 マンティコア
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_manticore_sample">11.3.10 マンティコア</h3>
+<p><strong>旧データ</strong>: Lv4, 抵10, 名称: マンティコア, In空欄, LP31, MP15, FS5, PW7, CH空欄, DE1, AC2, 備考: 飛行、僧4、尻尾+魔法攻撃</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>マンティコア</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv4÷2=2, FS5/PW7はLv4+1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP15÷5=3だが僧4で2に調整</td></tr>
+    <tr><td>HP</td><td>8</td><td>LP31÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>尻尾（白兵、命中率7 (FS5+体力2)、威力d2/d3 (PW7)、範囲2m/-、刺突）</td><td>魔法は特殊能力で処理</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、僧侶魔法Lv4</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で位置取り→魔法と尻尾で攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.11 エルダードラゴンレッド
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_elder_dragon_red_sample">11.3.11 エルダードラゴンレッド</h3>
+<p><strong>旧データ</strong>: Lv8, 抵14, 名称: エルダードラゴンレッド, In空欄, LP135, MP23, FS6, PW12, CH空欄, DE0, AC6, 備考: 炎ブレス5、体系合計3、噛みつき（FS9/PW12）、尻尾（FS5/PW11）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>エルダードラゴンレッド</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv8÷2=4だがFS6/PW12はLv8-2/+4で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP23÷5=5だが調整</td></tr>
+    <tr><td>HP</td><td>34</td><td>LP135÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        噛みつき（白兵、命中率12 (FS9+体力3)、威力d4/d5 (PW12)、範囲2m/-、刺突）<br/>        尻尾（白兵、命中率8 (FS5+体力3)、威力d3/d4 (PW11)、範囲3m/-、打撃）<br/>        炎ブレス（射撃、命中率9 (仮定)、威力d3/d4、範囲15m、火属性）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC6×2=12だが6に固定</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>炎ブレス（燃焼 蓄積値5）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>炎ブレスで範囲攻撃→噛みつきと尻尾で追撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.12 フェンリル
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_fenrir_sample">11.3.12 フェンリル</h3>
+<p><strong>旧データ</strong>: Lv6, 抵10, 名称: フェンリル, In2, LP26, MP空欄, FS5, PW7, CH空欄, DE3, AC1, 備考: 待機(4)、冷気ブレス(3)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>フェンリル</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv6÷2=3だがFS5/PW7はLv6-1/+1で調整</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>7</td><td>LP26÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS5+敏捷3)、威力d2/d3 (PW7)、範囲2m/-、刺突<br/>冷気ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、冷気）</td><td>噛みつきと冷気ブレス</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>2</td><td>DE3, 敏捷3-1=2で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>待機（4ターン後行動強化、仮定）、冷気ブレス（凍傷 蓄積値3）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>冷気ブレスで牽制→待機後近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.13 ケルベロス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_cerberus_sample">11.3.13 ケルベロス</h3>
+<p><strong>旧データ</strong>: Lv6, 抵10, 名称: ケルベロス, In1, LP49, MP空欄, FS7, PW10, CH空欄, DE2, AC2, 備考: 受け側回避6で燃焼、炎ブレス(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ケルベロス</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv6÷2=3, FS7/PW10はLv6+1/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>12</td><td>LP49÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率10 (FS7+体力3)、威力d3/d4 (PW10)、範囲2m/-、刺突<br/>炎ブレス（射撃、命中率7 (仮定)、威力d2/d3、範囲10m、火属性）</td><td>噛みつきと炎ブレス</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE2, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>燃焼（回避6以上で発動）、炎ブレス（燃焼 蓄積値4）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>炎ブレスで範囲攻撃→近接で追撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.14 オーガ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_ogre_sample">11.3.14 オーガ</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: オーガ, In-1, LP35, MP9, FS5, PW9, CH空欄, DE2, AC2, 備考: バトルアクス、任2</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>オーガ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS5/PW9はLv3+2/+6で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>1</td><td>MP9÷5=2だが任2で1に調整</td></tr>
+    <tr><td>HP</td><td>9</td><td>LP35÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+体力2、「バトルアクス」命中率-1補正後)、威力d3/d4 (PW9)、範囲2m/-、斬撃</td><td>6.2「バトルアクス」参照</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE2だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>3</td><td>知性1×2+1</td></tr>
+    <tr><td>特殊能力</td><td>魔術師魔法Lv2</td><td>「任2」を変換</td></tr>
+    <tr><td>装備品</td><td>バトルアクス</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>魔法で補助→バトルアクスで攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.15 ゴブリンロード
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_goblin_lord_sample">11.3.15 ゴブリンロード</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: ゴブリンロード, In-1, LP27, MP空欄, FS6, PW7, CH空欄, DE2, AC2, 備考: なし</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ゴブリンロード</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv5÷2=3, FS6/PW7はLv5+1/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>7</td><td>LP27÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率9 (FS6+体力3)、威力d2/d3 (PW7)、範囲2m/-、打撃</td><td>武器未指定のため仮定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE2だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>行動パターン</td><td>近接攻撃で指揮</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.16 サイクロプス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_cyclops_sample">11.3.16 サイクロプス</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: サイクロプス, In-1, LP51, MP空欄, FS4, PW10, CH空欄, DE0, AC1, 備考: グレートアクス、バーサク</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>サイクロプス</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv5÷2=3, FS4/PW10はLv5-1/+5で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>13</td><td>LP51÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS4+体力3、「グレートアクス」命中率-1補正後)、威力d3/d4 (PW10)、範囲2m/-、斬撃</td><td>6.2「グレートアクス」参照</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE0, 敏捷0-1=-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>バーサク (攻撃力+1、防御率-2、仮定)</td><td>備考変換</td></tr>
+    <tr><td>装備品</td><td>グレートアクス</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>バーサク発動後全力攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.17 ジャイアント
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_sample">11.3.17 ジャイアント</h3>
+<p><strong>旧データ</strong>: Lv4, 抵8, 名称: ジャイアント, In-1, LP43, MP11, FS6, PW8, CH空欄, DE2, AC2, 備考: モーニングスター、任3</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ジャイアント</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv4÷2=2, FS6/PW8はLv4+2/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP11÷5=3だが任3で2に調整</td></tr>
+    <tr><td>HP</td><td>11</td><td>LP43÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS6+体力2、「モーニングスター」命中率-1補正後)、威力d2/d3 (PW8)、範囲2m/-、打撃</td><td>6.2「モーニングスター」参照</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE2だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>魔術師魔法Lv3</td><td>「任3」を変換</td></tr>
+    <tr><td>装備品</td><td>モーニングスター</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>魔法で援護→モーニングスターで攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.18 バジリスク
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_basilisk_sample">11.3.18 バジリスク</h3>
+<p><strong>旧データ</strong>: Lv4, 抵8, 名称: バジリスク, In空欄, LP31, MP空欄, FS5, PW6, CH空欄, DE1, AC2, 備考: 石化(4)、毒ブレス(3)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>バジリスク</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv4÷2=2, FS5/PW6はLv4+1/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>8</td><td>LP31÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+体力2)、威力1/d2 (PW6)、範囲2m/-、刺突<br/>毒ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、毒属性）</td><td>噛みつきと毒ブレス</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>石化（蓄積値4）、毒ブレス（麻痺毒 蓄積値3）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>毒ブレスで弱体化→石化狙いの近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.19 ミミック
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_mimic_sample">11.3.19 ミミック</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: ミミック, In-2, LP23, MP空欄, FS6, PW6, CH空欄, DE0, AC3, 備考: 奇襲、噛みつき（FS6/PW6）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ミミック</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS6/PW6はLv3+3/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>-1</td><td>In-2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>6</td><td>LP23÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷負でも基本値適用</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS6+体力2)、威力1/d2 (PW6)、範囲2m/-、刺突</td><td>噛みつき</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>-2</td><td>DE0だが敏捷-1-1=-2で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>奇襲（初ターン命中率+2、仮定）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>奇襲で初撃→噛みつき継続</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.20 イエティ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_yeti_sample">11.3.20 イエティ</h3>
+<p><strong>旧データ</strong>: Lv4, 抵8, 名称: イエティ, In空欄, LP35, MP空欄, FS5, PW8, CH空欄, DE2, AC1, 備考: 冷気ブレス(3)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>イエティ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv4÷2=2, FS5/PW8はLv4+1/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>9</td><td>LP35÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+体力2)、威力d2/d3 (PW8)、範囲2m/-、打撃<br/>冷気ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、冷気）</td><td>爪と冷気ブレス</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>冷気ブレス（凍傷 蓄積値3）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>冷気ブレスで牽制→近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.21 スフィンクス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_sphinx_sample">11.3.21 スフィンクス</h3>
+<p><strong>旧データ</strong>: Lv6, 抵10, 名称: スフィンクス, In1, LP39, MP15, FS5, PW7, CH空欄, DE2, AC2, 備考: 飛行、僧4</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>スフィンクス</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv6÷2=3だがFS5/PW7はLv6-1/+1で調整</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP15÷5=3だが僧4で2に調整</td></tr>
+    <tr><td>HP</td><td>10</td><td>LP39÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+敏捷2)、威力d2/d3 (PW7)、範囲2m/-、斬撃</td><td>爪想定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE2, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、僧侶魔法Lv4</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で位置取り→魔法攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.22 ヒドラ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_hydra_sample">11.3.22 ヒドラ</h3>
+<p><strong>旧データ</strong>: Lv7, 抵11, 名称: ヒドラ, In空欄, LP63, MP空欄, FS6, PW9, CH空欄, DE1, AC3, 備考: 再生、複数攻撃（FS6/PW9×3）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ヒドラ</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv7÷2=4だがFS6/PW9はLv7-1/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>16</td><td>LP63÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率9 (FS6+体力3)、威力d3/d4 (PW9)、範囲2m/-、刺突（3回攻撃）</td><td>噛みつき×3</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>再生（ターン終了時HP+2、仮定）、複数攻撃（1ターンに3回攻撃）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>複数攻撃で連続攻撃→再生で耐久</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.23 ゴーレム
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_golem_sample">11.3.23 ゴーレム</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: ゴーレム, In-2, LP55, MP空欄, FS4, PW8, CH空欄, DE0, AC4, 備考: なし</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ゴーレム</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv5÷2=3, FS4/PW8はLv5-1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>-1</td><td>In-2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>14</td><td>LP55÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷負でも基本値適用</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS4+体力3)、威力d2/d3 (PW8)、範囲2m/-、打撃</td><td>拳想定</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC4×2=8だが6に固定</td></tr>
+    <tr><td>回避率</td><td>-2</td><td>DE0, 敏捷-1-1=-2</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>行動パターン</td><td>近接攻撃で堅実にダメージ</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.24 ワイバーン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_wyvern_sample">11.3.24 ワイバーン</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: ワイバーン, In1, LP43, MP空欄, FS6, PW8, CH空欄, DE2, AC2, 備考: 飛行、毒ブレス(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ワイバーン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv5÷2=3だがFS6/PW8はLv5+1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>11</td><td>LP43÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS6+敏捷2)、威力d2/d3 (PW8)、範囲2m/-、刺突<br/>毒ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、毒属性）</td><td>噛みつきと毒ブレス</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE2, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、毒ブレス（麻痺毒 蓄積値4）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で距離調整→毒ブレスと近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.25 キメラ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_chimera_sample">11.3.25 キメラ</h3>
+<p><strong>旧データ</strong>: Lv6, 抵10, 名称: キメラ, In空欄, LP47, MP空欄, FS7, PW9, CH空欄, DE1, AC3, 備考: 炎ブレス(3)、複数攻撃（FS7/PW9×2）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>キメラ</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv6÷2=3, FS7/PW9はLv6+1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>12</td><td>LP47÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率10 (FS7+体力3)、威力d3/d4 (PW9)、範囲2m/-、斬撃（2回攻撃）<br/>炎ブレス（射撃、命中率7 (仮定)、威力1/d2、範囲5m、火属性）</td><td>爪×2と炎ブレス</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>複数攻撃（1ターンに2回攻撃）、炎ブレス（燃焼 蓄積値3）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>炎ブレスで牽制→複数攻撃で圧倒</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.26 デーモン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_demon_sample">11.3.26 デーモン</h3>
+<p><strong>旧データ</strong>: Lv8, 抵12, 名称: デーモン, In空欄, LP59, MP23, FS6, PW10, CH空欄, DE2, AC3, 備考: 全魔法Lv3、カース(5)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>デーモン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv8÷2=4だがFS6/PW10はLv8-2/+2で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>3</td><td>MP23÷5=5だが全魔法Lv3で3に調整</td></tr>
+    <tr><td>HP</td><td>15</td><td>LP59÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS6+体力2)、威力d3/d4 (PW10)、範囲2m/-、斬撃</td><td>爪想定</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>7</td><td>知性3×2+1</td></tr>
+    <tr><td>特殊能力</td><td>魔術師魔法Lv3、僧侶魔法Lv3、精霊魔法Lv3、カース（蓄積値5）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>カースと魔法で弱体化→近接で仕上げ</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.27 サラマンダー
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_salamander_sample">11.3.27 サラマンダー</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: サラマンダー, In空欄, LP35, MP空欄, FS5, PW7, CH空欄, DE2, AC2, 備考: 炎ブレス(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>サラマンダー</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv5÷2=3だがFS5/PW7はLv5±0/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>9</td><td>LP35÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+体力2)、威力d2/d3 (PW7)、範囲2m/-、斬撃<br/>炎ブレス（射撃、命中率6 (仮定)、威力1/d2、範囲5m、火属性）</td><td>尾と炎ブレス</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>炎ブレス（燃焼 蓄積値4）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>炎ブレスで範囲攻撃→近接で追撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.28 フェニックス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_phoenix_sample">11.3.28 フェニックス</h3>
+<p><strong>旧データ</strong>: Lv7, 抵11, 名称: フェニックス, In2, LP47, MP19, FS6, PW8, CH空欄, DE3, AC2, 備考: 飛行、再生、炎ブレス(5)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>フェニックス</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv7÷2=4だがFS6/PW8はLv7-1/+1で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>1</td><td>MP19÷5=4だが調整</td></tr>
+    <tr><td>HP</td><td>12</td><td>LP47÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率9 (FS6+敏捷3)、威力d2/d3 (PW8)、範囲2m/-、斬撃<br/>炎ブレス（射撃、命中率7 (仮定)、威力d2/d3、範囲10m、火属性）</td><td>爪と炎ブレス</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>2</td><td>DE3, 敏捷3-1=2で一致</td></tr>
+    <tr><td>魔法防御率</td><td>3</td><td>知性1×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、再生（ターン終了時HP+2、仮定）、炎ブレス（燃焼 蓄積値5）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で回避重視→炎ブレスと近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.29 リヴァイアサン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_leviathan_sample">11.3.29 リヴァイアサン</h3>
+<p><strong>旧データ</strong>: Lv9, 抵13, 名称: リヴァイアサン, In空欄, LP79, MP空欄, FS7, PW11, CH空欄, DE1, AC4, 備考: 水ブレス(5)、複数攻撃（FS7/PW11×2）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リヴァイアサン</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv9÷2=5だがFS7/PW11はLv9-2/+2で調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>20</td><td>LP79÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率10 (FS7+体力3)、威力d3/d4 (PW11)、範囲2m/-、刺突（2回攻撃）<br/>水ブレス（射撃、命中率8 (仮定)、威力d2/d3、範囲10m、水属性）</td><td>噛みつき×2と水ブレス</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC4×2=8だが6に固定</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>複数攻撃（1ターンに2回攻撃）、水ブレス（転倒 蓄積値5、仮定）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>水ブレスで妨害→複数攻撃で圧倒</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.30 グリフォン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_griffon_sample">11.3.30 グリフォン</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: グリフォン, In2, LP39, MP空欄, FS6, PW8, CH空欄, DE3, AC2, 備考: 飛行</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>グリフォン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv5÷2=3だがFS6/PW8はLv5+1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>10</td><td>LP39÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率9 (FS6+敏捷3)、威力d2/d3 (PW8)、範囲2m/-、斬撃</td><td>爪想定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>2</td><td>DE3, 敏捷3-1=2で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で機動的に近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.31 マンドレイク
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_mandrake_sample">11.3.31 マンドレイク</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: マンドレイク, In-1, LP19, MP13, FS4, PW5, CH空欄, DE1, AC1, 備考: 叫び声(4)、精3</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>マンドレイク</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv3÷2=2だがFS4/PW5はLv3+1/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP13÷5=3だが精3で2に調整</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP19÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率5 (FS4+体力1)、威力1/d2 (PW5)、範囲2m/-、打撃</td><td>根想定</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE1だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>叫び声（麻痺 蓄積値4、仮定）、精霊魔法Lv3</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>叫び声で妨害→魔法攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.32 タイタン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_titan_sample">11.3.32 タイタン</h3>
+<p><strong>旧データ</strong>: Lv8, 抵12, 名称: タイタン, In-1, LP71, MP空欄, FS8, PW12, CH空欄, DE0, AC5, 備考: なし</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>タイタン</td><td>-</td></tr>
+    <tr><td>体力</td><td>4</td><td>Lv8÷2=4, FS8/PW12はLv8±0/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>18</td><td>LP71÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率12 (FS8+体力4)、威力d4/d5 (PW12)、範囲2m/-、打撃</td><td>拳想定</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC5×2=10だが6に固定</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE0, 敏捷0-1=-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>行動パターン</td><td>高威力の近接攻撃で圧倒</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.33 ユニコーン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_unicorn_sample">11.3.33 ユニコーン</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: ユニコーン, In2, LP35, MP17, FS5, PW7, CH空欄, DE3, AC2, 備考: 僧4</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ユニコーン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv5÷2=3だがFS5/PW7はLv5±0/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>2</td><td>MP17÷5=4だが僧4で2に調整</td></tr>
+    <tr><td>HP</td><td>9</td><td>LP35÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS5+敏捷3)、威力d2/d3 (PW7)、範囲2m/-、刺突</td><td>角想定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>2</td><td>DE3, 敏捷3-1=2で一致</td></tr>
+    <tr><td>魔法防御率</td><td>5</td><td>知性2×2+1</td></tr>
+    <tr><td>特殊能力</td><td>僧侶魔法Lv4</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>魔法で支援→近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.34 ペガサス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_pegasus_sample">11.3.34 ペガサス</h3>
+<p><strong>旧データ</strong>: Lv4, 抵8, 名称: ペガサス, In3, LP31, MP空欄, FS6, PW6, CH空欄, DE4, AC1, 備考: 飛行</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ペガサス</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv4÷2=2だがFS6/PW6はLv4+2/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>4</td><td>In3+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>8</td><td>LP31÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率10 (FS6+敏捷4)、威力1/d2 (PW6)、範囲2m/-、打撃</td><td>蹄想定</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>3</td><td>DE4, 敏捷4-1=3で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で高機動→近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.35 ドラゴンゾンビ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_dragon_zombie_sample">11.3.35 ドラゴンゾンビ</h3>
+<p><strong>旧データ</strong>: Lv8, 抵12, 名称: ドラゴンゾンビ, In-1, LP67, MP空欄, FS7, PW10, CH空欄, DE0, AC4, 備考: 毒ブレス(5)、複数攻撃（FS7/PW10×2）</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ドラゴンゾンビ</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv8÷2=4だがFS7/PW10はLv8-1/+2で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>17</td><td>LP67÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率10 (FS7+体力3)、威力d3/d4 (PW10)、範囲2m/-、刺突（2回攻撃）<br/>毒ブレス（射撃、命中率7 (仮定)、威力d2/d3、範囲10m、毒属性）</td><td>噛みつき×2と毒ブレス</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC4×2=8だが6に固定</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE0, 敏捷0-1=-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>複数攻撃（1ターンに2回攻撃）、毒ブレス（麻痺毒 蓄積値5）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>毒ブレスで弱体化→複数攻撃で圧倒</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.36 リザードマン (Lv0)
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lizardman_lv0_sample">11.3.36 リザードマン (Lv0)</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: リザードマン, In空欄, LP11, MP空欄, FS5, PW3, CH空欄, DE1, AC1, 備考: 冷気に弱い</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リザードマン</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS5/PW3はLv0+5/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>3</td><td>LP11÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率6 (FS5+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、打撃</td><td>素手想定</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>冷気弱点（冷気ダメージ+1、仮定）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>近接攻撃で単純に突進</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.37 リザードマン (Lv1)
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lizardman_lv1_sample">11.3.37 リザードマン (Lv1)</h3>
+<p><strong>旧データ</strong>: Lv1, 抵5, 名称: リザードマン, In空欄, LP15, MP空欄, FS6, PW4, CH空欄, DE2, AC2, 備考: ジャベリン、レザー、Sシールド</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リザードマン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv1÷2=1だがFS6/PW4はLv1+5/+3で+1調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>4</td><td>LP15÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>投擲、命中率7 (FS6+体力2、「ジャベリン」命中率-1補正後)、威力d(0～1)/1 (PW4)、範囲2m/15m、刺突</td><td>6.2「ジャベリン」参照</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>装備品</td><td>ジャベリン、レザーアーマー、スモールシールド</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>投擲で牽制→近接に移行</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.38 リザードマン (Lv3)
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lizardman_lv3_sample">11.3.38 リザードマン (Lv3)</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: リザードマン, In空欄, LP23, MP空欄, FS5, PW6, CH空欄, DE3, AC3, 備考: トライデント、チェイン、Lシールド</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リザードマン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS5/PW6はLv3+2/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>6</td><td>LP23÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+体力2)、威力1/d2 (PW6)、範囲2m/-、刺突</td><td>トライデント</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE3だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>装備品</td><td>トライデント、チェインメイル、ラージシールド</td><td>6.2参照</td></tr>
+    <tr><td>行動パターン</td><td>防御重視で近接攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.39 リザードマン (Lv5)
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_lizardman_lv5_sample">11.3.39 リザードマン (Lv5)</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: リザードマン, In空欄, LP0, MP空欄, FS空欄, PW3, CH空欄, DE空欄, AC空欄, 備考: なし</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>リザードマン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv5÷2=3だがPW3はLv5-2で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>8</td><td>LP未記載、仮にLv3の23から成長で32と想定、32÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率6 (FS仮5+体力2)、威力d(0～1)/1 (PW3)、範囲2m/-、打撃</td><td>素手想定、FS5仮定</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC仮2×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE仮2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>行動パターン</td><td>近接攻撃で粘る</td><td>-</td></tr>
+    <tr><td>備考</td><td>データ不完全のためFS5、AC2、DE2を仮定</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.40 大ネズミ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_rat_sample">11.3.40 大ネズミ</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: 大ネズミ, In空欄, LP6, MP空欄, FS4, PW3, CH空欄, DE2, AC0, 備考: 猛毒1(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>大ネズミ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS4/PW3はLv0+4/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>2</td><td>LP6÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率5 (FS4+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、刺突</td><td>噛みつき想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>麻痺毒 蓄積値4</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>噛みつきで毒を付与</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.41 ジャアントバット
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_bat_sample">11.3.41 ジャアントバット</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: ジャアントバット, In2, LP6, MP2, FS5, PW3, CH空欄, DE1, AC0, 備考: 飛行、ウーンズ</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ジャアントバット</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS5/PW3はLv0+5/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>3</td><td>In2+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MP2÷5=1だが魔法なしで0調整</td></tr>
+    <tr><td>HP</td><td>2</td><td>LP6÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2以上で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率8 (FS5+敏捷3)、威力d(0～1)/1 (PW3)、範囲2m/-、刺突</td><td>噛みつき想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE1, 敏捷3-1=2だが低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、ウーンズ（HP半減時攻撃力+1、仮定）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で回避→噛みつき攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.42 ブタ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_pig_sample">11.3.42 ブタ</h3>
+<p><strong>旧データ</strong>: Lv1, 抵5, 名称: ブタ, In-1, LP11, MP空欄, FS空欄, PW3, CH空欄, DE空欄, AC空欄, 備考: なし</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ブタ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv1÷2=1, PW3はLv1+2で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>3</td><td>LP11÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率4 (FS仮4+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、打撃</td><td>体当たり想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC空欄→0</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE空欄, 敏捷0-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>なし</td><td>-</td></tr>
+    <tr><td>行動パターン</td><td>体当たりで突進</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.43 軍馬
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_warhorse_sample">11.3.43 軍馬</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: 軍馬, In1, LP29, MP空欄, FS5, PW7, CH空欄, DE1, AC0, 備考: 転倒(3); FS4, PW6, ch捕縛; FS4, PW7, 転倒(5)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>軍馬</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS5/PW7はLv3+2/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>7</td><td>LP29÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>
+        蹄（白兵、命中率7 (FS5+敏捷2)、威力d2/d3 (PW7)、範囲2m/-、打撃）<br/>        噛みつき（白兵、命中率6 (FS4+敏捷2)、威力1/d2 (PW6)、範囲2m/-、刺突）<br/>        体当たり（白兵、命中率6 (FS4+敏捷2)、威力d2/d3 (PW7)、範囲2m/-、打撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE1, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>転倒（蓄積値3）、捕縛（掴み相当）、転倒（蓄積値5）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>体当たりで転倒狙い→蹄で追撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.44 子熊
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_bear_cub_sample">11.3.44 子熊</h3>
+<p><strong>旧データ</strong>: Lv1, 抵5, 名称: 子熊, In空欄, LP20, MP空欄, FS4, PW6, CH空欄, DE1, AC1, 備考: キリジュツ。掴みは命中+1、威力-1</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>子熊</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv1÷2=1, FS4/PW6はLv1+3/+5で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP20÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        白兵、命中率5 (FS4+体力1)、威力1/d2 (PW6)、範囲2m/-、斬撃（爪）<br/>        掴み（白兵、命中率6 (FS4+体力1+1)、威力d(0～1)/1 (PW6-1)、範囲2m/-、打撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>キリジュツ（クリティカル時、ダメージが1以上の場合に50%の確率で即死）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>掴みで拘束→爪で攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.45 熊
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_bear_sample">11.3.45 熊</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: 熊, In空欄, LP32, MP空欄, FS4, PW7, CH空欄, DE0, AC3, 備考: キリジュツ。掴みは命中+1、威力-1</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>熊</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS4/PW7はLv3+1/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>8</td><td>LP32÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        白兵、命中率6 (FS4+体力2)、威力d2/d3 (PW7)、範囲2m/-、斬撃（爪）<br/>        掴み（白兵、命中率7 (FS4+体力2+1)、威力1/d2 (PW7-1)、範囲2m/-、打撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>キリジュツ（クリティカル時、ダメージが1以上の場合に50%の確率で即死）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>掴みで拘束→爪で攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.46 グリズリー
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_grizzly_sample">11.3.46 グリズリー</h3>
+<p><strong>旧データ</strong>: Lv5, 抵9, 名称: グリズリー, In空欄, LP44, MP空欄, FS4, PW8, CH空欄, DE0, AC3, 備考: キリジュツ。掴みは命中+1、威力-1</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>グリズリー</td><td>-</td></tr>
+    <tr><td>体力</td><td>3</td><td>Lv5÷2=3, FS4/PW8はLv5-1/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>11</td><td>LP44÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        白兵、命中率7 (FS4+体力3)、威力d2/d3 (PW8)、範囲2m/-、斬撃（爪）<br/>        掴み（白兵、命中率8 (FS4+体力3+1)、威力1/d2 (PW8-1)、範囲2m/-、打撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>キリジュツ（クリティカル時、ダメージが1以上の場合に50%の確率で即死）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>掴みで拘束→爪で攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.47 カラス
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_crow_sample">11.3.47 カラス</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: カラス, In空欄, LP6, MP空欄, FS5, PW4, CH空欄, DE1, AC0, 備考: 飛行</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>カラス</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS5/PW4はLv0+5/+4で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>2</td><td>LP6÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率6 (FS5+体力1)、威力d(0～1)/1 (PW4)、範囲2m/-、刺突</td><td>嘴想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で回避→嘴で突く</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.48 オオナメクジ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_slug_sample">11.3.48 オオナメクジ</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: オオナメクジ, In-1, LP21, MP2, FS4, PW3, CH空欄, DE0, AC0, 備考: 自動再生D6、殻がつくとAC+2、単発スラッグ(1)使用</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>オオナメクジ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS4/PW3はLv0+4/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MP2÷5=1だが魔法なしで0調整</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP21÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率5 (FS4+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、打撃<br/>単発スラッグ（射撃、命中率5 (FS4+体力1)、威力1、範囲5m、打撃）</td><td>体当たりとスラッグ</td></tr>
+    <tr><td>防御</td><td>0/1（殻発動時4/1）</td><td>AC0×2、殻で+4</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE0, 敏捷0-1=-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>再生（ターン終了時HP+d3、仮定）、殻（条件発動で防御4/1）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>再生で耐久→殻で防御</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.49 寄生バエ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_parasitic_fly_sample">11.3.49 寄生バエ</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: 寄生バエ, In空欄, LP4, MP空欄, FS2, PW3, CH空欄, DE1, AC0, 備考: 飛行、寄生蛆を生みつける、死亡時D3体寄生蛆</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>寄生バエ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS2/PW3はLv0+2/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>1</td><td>LP4÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率3 (FS2+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、刺突</td><td>針想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE1, 敏捷1-1=0で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、寄生蛆生成（死亡時1d3体の寄生蛆出現）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で接近→寄生攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.50 寄生蛆
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_parasitic_maggot_sample">11.3.50 寄生蛆</h3>
+<p><strong>旧データ</strong>: Lv0, 抵4, 名称: 寄生蛆, In空欄, LP1, MP空欄, FS3, PW3, CH空欄, DE空欄, AC空欄, 備考: 2回命中すると寄生、寄生時オーバーキルダメージは宿主に直撃</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>寄生蛆</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv0÷2=0だがFS3/PW3はLv0+3/+3で+1調整、合計3制約</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>1</td><td>LP1÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率4 (FS3+体力1)、威力d(0～1)/1 (PW3)、範囲2m/-、刺突</td><td>噛みつき想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC空欄→0</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE空欄, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>寄生（2回命中後宿主に付与、オーバーキルダメージ宿主に転嫁）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>連続攻撃で寄生狙い</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.51 スズメバチ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_hornet_sample">11.3.51 スズメバチ</h3>
+<p><strong>旧データ</strong>: Lv1, 抵5, 名称: スズメバチ, In1, LP4, MP空欄, FS5, PW4, CH空欄, DE2, AC0, 備考: 飛行、猛毒2(4)</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>スズメバチ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv1÷2=1, FS5/PW4はLv1+4/+3で調整</td></tr>
+    <tr><td>敏捷</td><td>2</td><td>In1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>1</td><td>LP4÷4</td></tr>
+    <tr><td>AP</td><td>4</td><td>敏捷2で+1</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率7 (FS5+敏捷2)、威力d(0～1)/1 (PW4)、範囲2m/-、刺突</td><td>針想定</td></tr>
+    <tr><td>防御</td><td>0/1</td><td>AC0×2</td></tr>
+    <tr><td>回避率</td><td>1</td><td>DE2, 敏捷2-1=1で一致</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>飛行（地形無視）、麻痺毒 蓄積値4</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>飛行で接近→毒針攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.52 オオカマキリ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_mantis_sample">11.3.52 オオカマキリ</h3>
+<p><strong>旧データ</strong>: Lv2, 抵6, 名称: オオカマキリ, In空欄, LP19, MP空欄, FS5, PW6, CH空欄, DE2, AC1, 備考: キリジュツ</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>オオカマキリ</td><td>-</td></tr>
+    <tr><td>体力</td><td>1</td><td>Lv2÷2=1, FS5/PW6はLv2+3/+4で調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP19÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>白兵、命中率6 (FS5+体力1)、威力1/d2 (PW6)、範囲2m/-、斬撃</td><td>鎌想定</td></tr>
+    <tr><td>防御</td><td>2/1</td><td>AC1×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE2だが敏捷1-1=0で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>キリジュツ（クリティカル時、ダメージが1以上の場合に50%の確率で即死）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>鎌で高クリティカル攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.53 スコーピオン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_scorpion_sample">11.3.53 スコーピオン</h3>
+<p><strong>旧データ</strong>: Lv2, 抵6, 名称: スコーピオン, In-1, LP19, MP空欄, FS5, PW6, CH空欄, DE1, AC2, 備考: 猛毒3(4); FS5, PW4, ハサミ、同時攻撃</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>スコーピオン</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv2÷2=1だがFS5/PW6はLv2+3/+4で+1調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>5</td><td>LP19÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        尾針（白兵、命中率7 (FS5+体力2)、威力1/d2 (PW6)、範囲2m/-、刺突）<br/>        ハサミ（白兵、命中率7 (FS5+体力2)、威力d(0～1)/1 (PW4)、範囲2m/-、斬撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>4/1</td><td>AC2×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE1だが敏捷0-1=-1で低い方採用</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>麻痺毒 蓄積値4、複数攻撃（1ターンに2回攻撃）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>尾針で毒→ハサミで追撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.54 巨大ムカデ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_giant_centipede_sample">11.3.54 巨大ムカデ</h3>
+<p><strong>旧データ</strong>: Lv2, 抵6, 名称: 巨大ムカデ, In空欄, LP17, MP空欄, FS4, PW6, CH空欄, DE0, AC3, 備考: 顎、猛毒1(4); FS3, PW3, 胴体、前列で顎以外全てに攻撃</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>巨大ムカデ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv2÷2=1だがFS4/PW6はLv2+2/+4で+1調整</td></tr>
+    <tr><td>敏捷</td><td>1</td><td>In空欄→1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>4</td><td>LP17÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷1で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        顎（白兵、命中率6 (FS4+体力2)、威力1/d2 (PW6)、範囲2m/-、刺突）<br/>        胴体（白兵、命中率5 (FS3+体力2)、威力d(0～1)/1 (PW3)、範囲2m/-、打撃、複数対象）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>0</td><td>DE0, 敏捷1-1=0</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>麻痺毒 蓄積値4、複数攻撃（胴体で前列全体に攻撃）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>顎で毒→胴体で全体攻撃</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.55 ワニ
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_crocodile_sample">11.3.55 ワニ</h3>
+<p><strong>旧データ</strong>: Lv3, 抵7, 名称: ワニ, In-1, LP34, MP空欄, FS4, PW8, CH空欄, DE0, AC3, 備考: FS5, PW8, 尻尾で同時攻撃、ch転倒</p>
+<table class="equipment-table align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+    <tr><th>項目</th><th>値</th><th>備考</th></tr>
+    <tr><td>名称</td><td>ワニ</td><td>-</td></tr>
+    <tr><td>体力</td><td>2</td><td>Lv3÷2=2, FS4/PW8はLv3+1/+5で調整</td></tr>
+    <tr><td>敏捷</td><td>0</td><td>In-1+1</td></tr>
+    <tr><td>知性</td><td>0</td><td>MPなし</td></tr>
+    <tr><td>HP</td><td>9</td><td>LP34÷4</td></tr>
+    <tr><td>AP</td><td>3</td><td>敏捷0で基本値</td></tr>
+    <tr><td>攻撃手段</td><td>
+        顎（白兵、命中率6 (FS4+体力2)、威力d2/d3 (PW8)、範囲2m/-、刺突）<br/>        尻尾（白兵、命中率7 (FS5+体力2)、威力d2/d3 (PW8)、範囲3m/-、打撃）
+    </td><td>複数攻撃手段を反映</td></tr>
+    <tr><td>防御</td><td>6/1</td><td>AC3×2</td></tr>
+    <tr><td>回避率</td><td>-1</td><td>DE0, 敏捷0-1=-1</td></tr>
+    <tr><td>魔法防御率</td><td>1</td><td>知性0×2+1</td></tr>
+    <tr><td>特殊能力</td><td>転倒（蓄積値3、仮定）</td><td>備考変換</td></tr>
+    <tr><td>行動パターン</td><td>顎で攻撃→尻尾で転倒狙い</td><td>-</td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   11.3.56 レッドエルダードラゴン
+--------------------------------------------------------------------------------------------------->
+<h3 id="11_enemy_red_elder_dragon">11.3.56 レッドエルダードラゴン</h3>
+<table class="enemy-table">
+  <tr><th>名称</th><td>レッドエルダードラゴン</td></tr>
+  <tr><th>種族</th><td>ドラゴン</td></tr>
+  <tr><th>知能</th><td>高等</td></tr>
+  <tr><th>移動力</th><td>6m（飛行可）</td></tr>
+  <tr><th>HP</th><td>12</td></tr>
+  <tr><th>MP</th><td>6</td></tr>
+  <tr><th>防御</th><td>12/1（拡張ルール適用：出目1-2で防御点3、出目3-6で防御点2）</td></tr>
+  <tr><th>能力値</th><td>体力6、運動4、敏捷3、知力5、精神4</td></tr>
+  <tr><th>攻撃</th><td>
+    <ul>
+      <li>かみつき（白兵、斬、命中5、威力d3/d5、間合い2m）</li>
+      <li>炎ブレス（射撃、炎、命中5、威力d5、範囲直線5m、MP2）</li>
+    </ul>
+  </td></tr>
+  <tr><th>スキル</th><td>体系合計3（素振り千回、闘気集中を想定）</td></tr>
+  <tr><th>特殊能力</th><td>飛行、炎耐性（炎ダメージ半減）</td></tr>
+  <tr><th>ドロップ</th><td>ドラゴンの赤鱗（9金）、秘宝（12金、10%）</td></tr>
+</table>
+<!--#FOOTER_START-->
+</body>
+</html>

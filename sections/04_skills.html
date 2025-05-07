@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<!--
+【AI向け注釈】
+本ルールブックで使用される「dランク（dice rank）」は、出目の範囲「1〜x」の乱数を振る処理を指します。dランクxとは「1〜x」の出目をとる乱数であり、dランク3＝d3（1〜3）、dランク5＝d6（1〜6）を意味します。dランク0は例外ではなく「1〜0」すなわち0〜1の範囲の乱数を意味します。また、dランク7はd7（1〜7）を、dランク8はd8（1〜8）を意味し、これは別ランクとして扱われます。理論上は負のランク（例：dランク−100＝−100〜1）も定義可能です。
+
+【追加：判定方式の統一】
+「EFA Lite」では、処理高速化のためすべての判定を下方ロール（d6、目標値以下で成功）に統一しています。旧版「EFA」で使用されていた上方ロール（例: 2d6、難易度以上で成功）は廃止されました。以下の点に注意してください：
+- ルールブック内で「2d6」「上方ロール」「難易度X以上」などの記述を見つけた場合、下方ロールに変換。
+- 変換例：
+  - 旧: 「2d6+敏捷、難易度10、1段階不利」→ 新: 「敏捷+補正（通常+2）、d6×2（1段階有利）」
+  - 旧: 「2d6+知性、難易度12」→ 新: 「知性+補正（通常+2、難易度高で+1）、d6」
+- ⚠ 混同しないでください：上方ロールの「クリティカル（12）」や「ファンブル（2）」は下方ロールでは適用されません。
+
+【追加：HTML整形ルール】
+このルールブックはAI整形対応のため、以下のHTML構造を前提としています：
+- <h2>〜</h2>、<h3>〜</h3>、<h4>〜</h4>、<h4>〜</h4>、<p>〜</p> は、それぞれ1行にまとまっている。
+- </p> の後の改行は保持するが、他の閉じタグの直後には原則改行を入れない。
+- <tr><th>...</th></tr>、<tr><td>...</td></tr> は1行に収める。
+- <table>内の<br>の直後の改行は削除するが、テーブル外の<br>には改行を残す。
+
+【追加：誤解されやすい点のQ&A】
+Q1. 「飛行キャラクター」とは「飛行中のキャラ」のこと？
+→ いいえ。「飛行可能なキャラクター」と「飛行中のキャラクター」は明確に区別されます。
+
+Q2. 窒息スロットは「蓄積3で1スロット」？
+→ いいえ。窒息は蓄積値で管理され、「体力+2」以上で発症します。
+
+Q3. 飛行中に攻撃などの行動をすると、さらに窒息がたまる？
+→ いいえ。ホバリングや飛行移動でAPを支払っていれば、それ以上の窒息は発生しません。
+
+Q4. 滑空は飛行状態ではない？
+→ いいえ。滑空は飛行状態の一部であり、行動制限も飛行中として扱われます。
+
+Q5. 窒息が発症してもすぐ治る？
+→ いいえ。蓄積値が0になるまでAP−1の効果は継続します。
+
+-->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/efa_lite.css">
+<title>EFA Lite ルールブック</title>
+</head>
+<body>
+<div id="topbar"><a href="00_toc.html#00_toc">目次へ戻る</a></div>
+<!--#HEADER_END-->
+<!--------------------------------------------------------------------------------------------------
+-   4. スキル
+--------------------------------------------------------------------------------------------------->
+<h1 id="04_skills">4. スキル</h1>
+<p>キャラクターはスキルを取得することで特殊な能力や技術を身につけます。スキルは生活系と戦闘系に分類されます。</p>
+<!--------------------------------------------------------------------------------------------------
+-   4.1 生活系スキル
+--------------------------------------------------------------------------------------------------->
+<h2 id="04_lifestyle_skills">4.1 生活系スキル</h2>
+<p>
+　生活系スキルは日常生活や冒険の支援に役立ち、キャラクターの職業に応じて取得しやすく設定されています。職業Lvを1つ上昇させる毎に生活系スキルを2つ習得またはレベルを上げることができます。そのカテゴリの職業Lvを超えて生活スキルLvを上げることはできません。<br/>
+　職業外のスキルを習得することも可能ですが、その場合は2つのスキルのうち1つは必修スキルから選ぶ必要があります。<br/>
+　一部のスキルは直接冒険に役立たない場合でも、経済力を強化する効果があります。各判定の詳細は「<a href="07_adventure_rules.html#07_adventure_actions">7.2 冒険行動の基本と一般判定</a>」および「<a href="07_adventure_rules.html#07_adventure_rest">7.5 食事・休憩・睡眠と回復</a>」を参照してください。</p>
+<!--------------------------------------------------------------------------------------------------
+-   4.1.1 職業テーブル
+--------------------------------------------------------------------------------------------------->
+<h3 id="04_profession_table">4.1.1 職業テーブル</h3>
+
+<table class="align-table align-table-center-1 align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5 align-table-center-6">
+<caption>職業別おすすめスキル（ルネサンス期～大航海時代）</caption>
+<tr><th>職業</th><th colspan="5">おすすめスキル</th></tr>
+<tr><th colspan="6" class="left">職人</th></tr>
+<tr><td>ガラス職人</td><td>ガラス製作</td><td>芸術造形  </td><td>裁縫技術  </td><td>          </td><td>          </td></tr>
+<tr><td>鍛冶屋    </td><td>鍛冶技術  </td><td>鉱石知識  </td><td>農具整備  </td><td>木工技術  </td><td>          </td></tr>
+<tr><td>石工      </td><td>石工技術  </td><td>建築知識  </td><td>鉱石知識  </td><td>伐採技術  </td><td>          </td></tr>
+<tr><td>織物職人  </td><td>裁縫技術  </td><td>畜産管理  </td><td>芸術造形  </td><td>染色技術  </td><td>          </td></tr>
+<tr><td>木工職人  </td><td>木工技術  </td><td>伐採技術  </td><td>建築知識  </td><td>航海術    </td><td>農具整備  </td></tr>
+<tr><td>印刷職人  </td><td>記録術    </td><td>芸術造形  </td><td>裁縫技術  </td><td>          </td><td>          </td></tr>
+<tr><th colspan="6" class="left">農村・牧畜</th></tr>
+<tr><td>農夫      </td><td>農耕技術  </td><td>畑管理    </td><td>畜産管理  </td><td>農具整備  </td><td>薬草知識  </td></tr>
+<tr><td>調教師    </td><td>調教術    </td><td>畜産管理  </td><td>馬術      </td><td>鷹匠技術  </td><td>移動技術  </td></tr>
+<tr><td>遊牧民    </td><td>畜産管理  </td><td>馬術      </td><td>移動技術  </td><td>森渡り    </td><td>          </td></tr>
+<tr><th colspan="6" class="left">狩猟・採集</th></tr>
+<tr><td>狩人      </td><td>森渡り    </td><td>鷹匠技術  </td><td>漁労技術  </td><td>移動技術  </td><td>調教術    </td></tr>
+<tr><td>鉱夫      </td><td>鉱石知識  </td><td>探鉱術    </td><td>鍛冶技術  </td><td>          </td><td>          </td></tr>
+<tr><th colspan="6" class="left">航海・交易</th></tr>
+<tr><td>商人      </td><td>洞察眼    </td><td>記録術    </td><td>演技技術  </td><td>航海術    </td><td>          </td></tr>
+<tr><td>測量士    </td><td>航海術    </td><td>記録術    </td><td>天候観察  </td><td>移動技術  </td><td>          </td></tr>
+<tr><td>水夫      </td><td>航海術    </td><td>漁労技術  </td><td>天候観察  </td><td>移動技術  </td><td>料理選別  </td></tr>
+<tr><th colspan="6" class="left">知識・宗教</th></tr>
+<tr><td>学者      </td><td>記録術    </td><td>魔導加工  </td><td>天候観察  </td><td>薬師知識  </td><td>芸術造形  </td></tr>
+<tr><td>僧侶      </td><td>薬草知識  </td><td>記録術    </td><td>宗教儀式  </td><td>音楽      </td><td>          </td></tr>
+<tr><td>占星術師  </td><td>天候観察  </td><td>魔導加工  </td><td>記録術    </td><td>          </td><td>          </td></tr>
+<tr><td>薬師      </td><td>薬草知識  </td><td>薬品調合  </td><td>薬師知識  </td><td>料理選別  </td><td>調香術    </td></tr>
+<tr><th colspan="6" class="left">文化・芸術</th></tr>
+<tr><td>吟遊詩人</td><td>音楽      </td><td>演技技術  </td><td>芸術造形  </td><td>          </td><td>          </td></tr>
+<tr><td>芸術家    </td><td>芸術造形  </td><td>音楽      </td><td>化粧術    </td><td>裁縫技術  </td><td>          </td></tr>
+<tr><th colspan="6" class="left">軍事・治安</th></tr>
+<tr><td>兵士      </td><td>洞察眼    </td><td>移動技術  </td><td>馬術      </td><td>調教術    </td><td>演技技術  </td></tr>
+<tr><td>盗賊      </td><td>洞察眼    </td><td>移動技術  </td><td>森渡り    </td><td>演技技術  </td><td>          </td></tr>
+<tr><th colspan="6" class="left">行政・貴族</th></tr>
+<tr><td>貴族      </td><td>記録術    </td><td>洞察眼    </td><td>演技技術  </td><td>農耕技術  </td><td>音楽      </td></tr>
+<tr><td>騎士      </td><td>馬術      </td><td>移動技術  </td><td>洞察眼    </td><td>調教術    </td><td>鍛冶技術  </td></tr>
+<tr><th colspan="6" class="left">食文化</th></tr>
+<tr><td>酒造職人  </td><td>料理技術  </td><td>料理選別  </td><td>薬草知識  </td><td>          </td><td>          </td></tr>
+<tr><td>料理人    </td><td>料理技術  </td><td>料理選別  </td><td>料理術    </td><td>薬草知識  </td><td>          </td></tr>
+</table>
+<!--------------------------------------------------------------------------------------------------
+-   4.1.2 生活系スキルテーブル
+--------------------------------------------------------------------------------------------------->
+<h3 id="04_lifestyle_skills_table">4.1.2 生活系スキルテーブル</h3>
+
+<table class="align-table align-table-center-1 align-table-center-2">
+<caption>生活系スキルテーブルB（体力系）</caption>
+<tr><th>サブスキル名</th><th>判定カテゴリ</th><th>効果内容</th></tr>
+<tr><th colspan="3" class="left">畜産管理</th></tr>
+<tr><td>家畜採取</td><td>採取・狩猟</td><td>家畜からの毛・乳・卵などを安全に採取できる。品質+1や数量+1の割り振りが可能。</td></tr>
+<tr><td>家畜治療</td><td>癒し・治療</td><td>家畜・小動物に対する応急手当。🩸→🩹変換可（重症には専門スキルが必要）。</td></tr>
+<tr><td>家畜調教</td><td>教育・訓練</td><td>家畜の調教、餌付け、馴化による管理。調教判定で1段階有利。</td></tr>
+<tr><th colspan="3" class="left">農耕技術</th></tr>
+<tr><td>作物採取</td><td>採取・狩猟</td><td>作物・ハーブを畑から採取。季節の影響あり。</td></tr>
+<tr><td>食材選別</td><td>調理・選別</td><td>食材の選別や毒キノコの判別に使用可。</td></tr>
+<tr><td>農作指導</td><td>教育・訓練</td><td>作物の育成指導。農地管理にも応用される。</td></tr>
+<tr><th colspan="3" class="left">漁労技術</th></tr>
+<tr><td>漁業</td><td>採取・狩猟</td><td>川や湖、海での漁を行う。網・釣具使用による判定で有利を得る。</td></tr>
+<tr><td>水産処理</td><td>調理・選別</td><td>水産物の下処理・選別に適し、鮮度と品質の保持に役立つ。</td></tr>
+<tr><th colspan="3" class="left">石工技術</th></tr>
+<tr><td>石材製作</td><td>製作・加工</td><td>石材の整形・建築物の構築。砦・壁・祭壇などにも応用可。</td></tr>
+<tr><td>石材修理</td><td>修理・補修</td><td>石造りの設備や構造物の補修が可能。耐久性の回復を図る。</td></tr>
+<tr><th colspan="3" class="left">馬術</th></tr>
+<tr><td>騎乗操作</td><td>教育・訓練</td><td>騎乗動物を意のままに操る。急停止やジャンプに対応。</td></tr>
+<tr><td>騎乗警戒</td><td>警戒・見張り</td><td>騎乗中の視野・警戒範囲が拡大。見張り判定に有利。</td></tr>
+<tr><th colspan="3" class="left">畑管理</th></tr>
+<tr><td>作物管理</td><td>採取・狩猟</td><td>季節と作物に応じて効率よく農作物を育成・収穫する。</td></tr>
+<tr><td>農作指導</td><td>教育・訓練</td><td>作物の間引き・病害の対処法などを他者に教える。</td></tr>
+<tr><th colspan="3" class="left">建築知識</th></tr>
+<tr><td>建築設計</td><td>製作・加工</td><td>木造・石造などの建築物の設計・組立が可能。</td></tr>
+<tr><td>建築補修</td><td>修理・補修</td><td>建物の損壊箇所の特定と応急補修が可能。</td></tr>
+<tr><th colspan="3" class="left">伐採技術</th></tr>
+<tr><td>木材伐採</td><td>採取・狩猟</td><td>木材の切り出しと分類。斧の使用判定で有利。</td></tr>
+<tr><td>木材加工</td><td>製作・加工</td><td>採取した木材の粗加工が可能（簡易家具・杭など）。</td></tr>
+<tr><th colspan="3" class="left">探鉱術</th></tr>
+<tr><td>鉱脈探査</td><td>採取・狩猟</td><td>地層から鉱脈や宝石を見つける。調査判定に有利。</td></tr>
+<tr><td>鉱物鑑定</td><td>知識調査</td><td>鉱物や鉱石の種類・希少性を見分ける。</td></tr>
+<tr><th colspan="3" class="left">鷹匠技術</th></tr>
+<tr><td>鷹狩</td><td>採取・狩猟</td><td>鷹・鳥類を使った上空からの狩猟や監視が可能。</td></tr>
+<tr><td>猛禽訓練</td><td>教育・訓練</td><td>狩猟用の猛禽類の訓練・管理に使える。</td></tr>
+<tr><th colspan="3" class="left">森渡り</th></tr>
+<tr><td>森林探索</td><td>探索・捜索</td><td>森林内の進行・捜索に適応。地形によるAP増加を軽減する。</td></tr>
+<tr><td>森林警戒</td><td>警戒・見張り</td><td>自然の中での気配察知・見張り判定に有利。</td></tr>
+<tr><th colspan="3" class="left">移動技術</th></tr>
+<tr><td>登攀</td><td>移動・探索</td><td>登攀移動力+1。</td></tr>
+<tr><td>長距離移動</td><td>移動・探索</td><td>長距離移動力+1。</td></tr>
+<tr><td>匍匐</td><td>移動・探索</td><td>匍匐移動力+1。</td></tr>
+<tr><th colspan="3" class="left">鍛冶技術</th></tr>
+<tr><td>金属製作</td><td>製作・加工</td><td>金属製の武器や工具、防具を製作可能。品質+1の割り振りが可能。</td></tr>
+<tr><td>金属修理</td><td>修理・補修</td><td>金属製装備の耐久修理を行える。修理限界を越えない範囲で完全修理可。</td></tr>
+<tr><td>鍛冶指導</td><td>教育・訓練</td><td>弟子や若者に鍛冶を指導する。模倣スキル蓄積支援も可能。</td></tr>
+<tr><th colspan="3" class="left">木工技術</th></tr>
+<tr><td>木製製作</td><td>製作・加工</td><td>木製の武器、家具、構造物の作成。キャンプ設備の構築にも対応。</td></tr>
+<tr><td>木製修理</td><td>修理・補修</td><td>木製品の修理・補強。野外施設や道具の修理に有効。</td></tr>
+<tr><th colspan="3" class="left">鉱石知識</th></tr>
+<tr><td>鉱石採掘</td><td>採取・狩猟</td><td>鉱脈や金属鉱石の判別。採掘時に1段階有利。</td></tr>
+<tr><td>鉱石鑑定</td><td>知識調査</td><td>鉱石の性質・価値・加工適性を調べる。貴金属鑑定も含む。</td></tr>
+<tr><th colspan="3" class="left">農具整備</th></tr>
+<tr><td>農具修理</td><td>修理・補修</td><td>鍬・鋤など農業道具の修理に対応。簡易工具でも応急可。</td></tr>
+<tr><td>農具製作</td><td>製作・加工</td><td>簡易農具や補助器具の製作が可能。</td></tr>
+</table>
+
+<table class="align-table align-table-center-1 align-table-center-2">
+<caption>生活系スキルテーブルB（知性系）</caption>
+<tr><th>サブスキル名</th><th>判定カテゴリ</th><th>効果内容</th></tr>
+<tr><th colspan="3" class="left">ガラス製作</th></tr>
+<tr><td>ガラス熔解</td><td>製作・加工</td><td>ガラス原料（硅砂、ソーダ灰）の熔解と調合。素材作成。</td></tr>
+<tr><td>吹きガラス</td><td>製作・加工</td><td>衣類・布装備の製作。品質+1可。</td></tr>
+<tr><td>装飾加工  </td><td>製作・加工</td><td>ガラスに彫刻、着色、モザイクを施す。</td></tr>
+<tr><th colspan="3" class="left">裁縫技術</th></tr>
+<tr><td>布製作</td><td>製作・加工</td><td>衣類・布装備の製作。品質+1可。</td></tr>
+<tr><td>布修理</td><td>修理・補修</td><td>布製品の応急修理が可能（修理限界を超えない範囲で）。</td></tr>
+<tr><th colspan="3" class="left">演奏技術</th></tr>
+<tr><td>士気向上</td><td>演奏・芸能</td><td>演奏や舞によって仲間の士気を高める。MP回復やストレス軽減に効果。</td></tr>
+<tr><td>演奏指導</td><td>教育・訓練</td><td>後輩への指導や稽古に使え、模倣蓄積値が得られやすくなる。</td></tr>
+<tr><th colspan="3" class="left">料理技術</th></tr>
+<tr><td>食事調理</td><td>調理・選別</td><td>食材から食事や保存食を調理できる。食事のHP/MP回復量に影響。</td></tr>
+<tr><td>素材選定</td><td>採取・狩猟</td><td>食材選別や調理に向いた素材の選定が可能。毒抜きにも利用される。</td></tr>
+<tr><th colspan="3" class="left">魔導加工</th></tr>
+<tr><td>魔法製作</td><td>製作・加工</td><td>魔法効果を持つ装備・道具を作成できる（魔法石、魔導器など）。</td></tr>
+<tr><td>魔法修理</td><td>修理・補修</td><td>壊れた魔法器具の修理を行える（強度・品質に依存）。</td></tr>
+<tr><td>魔導分析</td><td>知識調査</td><td>古代の魔導技術や魔法の特性を調査・分析できる。</td></tr>
+<tr><th colspan="3" class="left">薬草知識</th></tr>
+<tr><td>薬草採取</td><td>採取・狩猟</td><td>野草・薬草・キノコなどを識別して安全に採取できる。毒回避にも使える。</td></tr>
+<tr><td>薬草処理</td><td>癒し・治療</td><td>回復薬や解毒剤の原材料を適切に処理し、効果を高める。</td></tr>
+<tr><td>薬効加工</td><td>調理・選別</td><td>薬効のある素材の選別・加工。保存食への薬効付与も可能。</td></tr>
+<tr><th colspan="3" class="left">薬品調合</th></tr>
+<tr><td>薬品製作</td><td>製作・加工</td><td>回復薬・毒・解毒剤などを調合。品質や持続時間に影響。</td></tr>
+<tr><td>薬効混入</td><td>調理・選別</td><td>食品への薬効成分混入なども対応。味と効果を両立できる。</td></tr>
+<tr><th colspan="3" class="left">料理選別</th></tr>
+<tr><td>食材選別</td><td>調理・選別</td><td>食材の鮮度や毒性を見極め、安全な調理材料を選ぶ。</td></tr>
+<tr><td>滋養調理</td><td>癒し・治療</td><td>滋養に優れた食事でHP・MP回復量+1補正が可能。</td></tr>
+<tr><th colspan="3" class="left">調教術</th></tr>
+<tr><td>動物訓練</td><td>教育・訓練</td><td>動物を戦闘向けや荷運び用に訓練できる。調教判定で有利。</td></tr>
+<tr><td>動物鎮静</td><td>癒し・治療</td><td>ストレス・興奮状態の動物を落ち着かせることができる。</td></tr>
+<tr><th colspan="3" class="left">航海術</th></tr>
+<tr><td>航路選択</td><td>警戒・見張り</td><td>海や河川での進路選択・風の読みを行い遭難を防ぐ。</td></tr>
+<tr><td>海路調査</td><td>知識調査</td><td>潮流・海路・星座を記録から調べ、航路を最適化する。</td></tr>
+<tr><td>水泳</td><td>移動・探索</td><td>水泳移動力+1。</td></tr>
+<tr><th colspan="3" class="left">演技技術</th></tr>
+<tr><td>演技魅了</td><td>演奏・芸能</td><td>物語や芝居による魅了・注意引きが可能。</td></tr>
+<tr><td>情報収集</td><td>聞き込み</td><td>話を合わせて情報を引き出すのに有利。</td></tr>
+<tr><th colspan="3" class="left">芸術造形</th></tr>
+<tr><td>装飾製作</td><td>製作・加工</td><td>装飾品・彫刻・記念碑などを製作できる。感情や信仰にも影響。</td></tr>
+<tr><td>舞台演出</td><td>演奏・芸能</td><td>舞台演出・空間演出などで演奏や祝祭を支援する。</td></tr>
+<tr><th colspan="3" class="left">記録術</th></tr>
+<tr><td>記録作成</td><td>知識調査</td><td>地図・日誌・記録文書の作成と解読に長ける。</td></tr>
+<tr><td>記録指導</td><td>教育・訓練</td><td>文章・図解での指導が得意で、蓄積支援に役立つ。</td></tr>
+<tr><th colspan="3" class="left">歌唱技術</th></tr>
+<tr><td>士気歌唱</td><td>演奏・芸能</td><td>歌によって仲間の士気・MP回復を促進できる。</td></tr>
+<tr><td>癒し歌唱</td><td>癒し・治療</td><td>子守歌や安眠誘導でストレス軽減・疲労緩和を支援。</td></tr>
+<tr><th colspan="3" class="left">洞察眼</th></tr>
+<tr><td>虚偽察知</td><td>聞き込み</td><td>相手の言動から虚偽や隠し事を見抜く判定に有利。</td></tr>
+<tr><td>警戒察知</td><td>警戒・見張り</td><td>待機中の不審な動きや接近を察知する感覚が鋭い。</td></tr>
+<tr><th colspan="3" class="left">調香術</th></tr>
+<tr><td>香料調合</td><td>製作・加工</td><td>香油・芳香・媚薬などを調合し、効果付与が可能。</td></tr>
+<tr><td>癒し芳香</td><td>癒し・治療</td><td>気分転換・精神安定を助ける芳香の使用が可能。</td></tr>
+<tr><th colspan="3" class="left">天候観察</th></tr>
+<tr><td>天候予測</td><td>警戒・見張り</td><td>空模様や風の兆候から天候変化を予測できる。</td></tr>
+<tr><td>気象分析</td><td>知識調査</td><td>過去の気象記録・周期の分析で長期予測が可能。</td></tr>
+<tr><th colspan="3" class="left">化粧術</th></tr>
+<tr><td>魅力装飾</td><td>演奏・芸能</td><td>化粧・装飾により注目を集める。魅力判定に+1補正。</td></tr>
+<tr><td>印象操作</td><td>聞き込み</td><td>外見や雰囲気の変化によって警戒心を和らげやすい。</td></tr>
+<tr><th colspan="3" class="left">料理術</th></tr>
+<tr><td>効率調理</td><td>調理・選別</td><td>複数人分の料理を効率良く調理し、効果的な回復を提供。</td></tr>
+<tr><td>特製調理</td><td>癒し・治療</td><td>滋養により回復処理に+1の補正を与える特製食が作れる。</td></tr>
+<tr><th colspan="3" class="left">薬師知識</th></tr>
+<tr><td>薬効判断</td><td>癒し・治療</td><td>調合薬の効果や副作用を正確に見極め使用できる。</td></tr>
+<tr><td>薬草分析</td><td>知識調査</td><td>薬草・毒草・調合書の効果を調べて分析する。</td></tr>
+</table>
+
+<h4>■ 体力系</h4>
+<table class="skill-table align-table-center-1 align-table-center-2">
+  <tr><th colspan="3" class="left">芸能(体力)</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>踊り      </td><td>踊り、MP回復△（精神）          </td><td>MP+0.5（品質1）または+1.0（品質2）、士気：仲間MP+1。Lv2で不調：つまんない-1。 </td></tr>
+  <tr><td>楽器演奏  </td><td>演奏、MP回復△（精神）          </td><td>MP+0.5（品質1）または+1.0（品質2）、士気：仲間MP+1。Lv2で不調：つまんない-1。 </td></tr>
+  <tr><td>歌唱      </td><td>歌唱、MP回復△（精神）          </td><td>MP+0.5（品質1）または+1.0（品質2）、士気：仲間MP+1。Lv2で不調：つまんない-1。 </td></tr>
+  <tr><td>化粧術    </td><td>変装△（知性）                  </td><td>交渉：好感度1段階有利。Lv2で変装成功率+10%。 </td></tr>
+  <tr><th colspan="3" class="left">狩猟民</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>森渡り    </td><td>森林採取、移動△（敏捷）        </td><td>森移動コスト-1km。Lv2でコスト-2km。 </td></tr>
+  <tr><td>猟師の心得</td><td>追跡、採取△（機転）            </td><td>薬草/食料採取（品質1：1単位、品質2：2単位）。Lv2で追跡時間短縮（1時間減）。 </td></tr>
+  <tr><td>水泳      </td><td>水辺採取、水泳△（体力）        </td><td>水中移動+1km、窒息限界+1。Lv2で速度+1km/h。 </td></tr>
+  <tr><td>漁業      </td><td>水辺採取△（体力）              </td><td>食料採取（品質1：1食、品質2：2食）。Lv2で採取量+1。 </td></tr>
+  <tr><td>野営技術  </td><td>野営準備△（体力）              </td><td>不調軽減（品質1：-1、品質2：-2）、HP+0.25。Lv2で設営時間短縮（1時間減）。 </td></tr>
+  <tr><td>動物使役  </td><td>                                </td><td>調教・命令（警戒・合図・攻撃支援）に対応。猟犬や猛禽との連携可。</td></tr>
+  <tr><td>大量調理  </td><td>食材判別、HP回復△（精神）      </td><td>HP+0.5（品質1）または+1.0（品質2）、野外可。Lv2で大量調理難易度-1。 </td></tr>
+  <tr><th colspan="3" class="left">職人(体力)</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>即興工作  </td><td>罠/道具製作△（機転）           </td><td>簡易罠/道具（品質1：基本、品質2：強化）。Lv2で品質+1。 </td></tr>
+  <tr><td>木工      </td><td>木材製作、修理△（機転）        </td><td>木修理（1時間2段階）。Lv2で製作時間短縮（1時間減）。 </td></tr>
+  <tr><td>石工技術  </td><td>石材製作、修理△（体力）        </td><td>石材修理（1時間1段階）。Lv2で製作量+1。 </td></tr>
+  <tr><td>鍛冶技術  </td><td>装備修理、製作△（体力）        </td><td>金属修理（1時間1段階）。Lv2で修理時間短縮（1時間減）。 </td></tr>
+  <tr><td>大量調理  </td><td>食材判別、HP回復△（精神）      </td><td>HP+0.5（品質1）または+1.0（品質2）、野外可。Lv2で大量調理難易度-1。 </td></tr>
+  <tr><th colspan="3" class="left">戦士</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>戦術知識  </td><td>戦術立案△（知性）              </td><td>戦闘準備時間-1時間。Lv2で戦術成功率+10%。 </td></tr>
+  <tr><td>行軍      </td><td>強行軍、体力行動△（体力）      </td><td>移動力+1km/h。Lv2でHPコスト-0.5。 </td></tr>
+  <tr><td>陣地構築  </td><td>簡易防御構築△（体力）          </td><td>防御力+1（1時間）。Lv2で構築時間短縮（1時間減）。 </td></tr>
+  <tr><td>騎獣制御  </td><td>騎獣制御、騎乗、調教△（機転）  </td><td>7.4.5参照。Lv2で戦闘時命中ペナルティ軽減。 </td></tr>
+  <tr><td>疾走      </td><td>追跡、地上移動△（体力）        </td><td>疾走距離+1km、窒息限界+1。Lv2で距離+2km。 </td></tr>
+  <tr><td>登攀      </td><td>山岳採取、登攀△（敏捷）        </td><td>登攀速度+1m、疲労限界+1。Lv2で速度+1m/分。 </td></tr>
+  <tr><td>跳躍      </td><td>山岳探索、跳躍△（運動）        </td><td>跳躍距離+1m、疲労限界+1。Lv2で距離+1m。 </td></tr>
+  <tr><td>野外斥候  </td><td>探索全般△（機転）              </td><td>Lv2で探索時間短縮（1時間減）。 </td></tr>
+  <tr><th colspan="3" class="left">肉体労働</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>荷運び    </td><td>運搬、跳躍△（運動）            </td><td>移動力+1km/h。Lv2で積載量+5kg。 </td></tr>
+  <tr><td>土木作業  </td><td>建設、掘削△（体力）            </td><td>構築時間短縮（Lv2）。 </td></tr>
+  <tr><td>採掘      </td><td>石材、鉱石採取＋鑑定△（体力）  </td><td>採取量+1（Lv2）。 </td></tr>
+  <tr><td>軽業      </td><td>綱渡り、高所作業、曲芸△（敏捷）</td><td>悪地形Lv3以上は1Lv低いものとして扱う。Lv2で曲芸の収入2倍。 </td></tr>
+  <tr><th colspan="3" class="left">農民</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>畑仕事    </td><td>農作業、休息△（体力）          </td><td>食料採取（品質1：1食、品質2：2食）<br/>休憩HP+0.5（品質1）または+1.0（品質2）。Lv2で採取量+1。 </td></tr>
+  <tr><td>大量調理  </td><td>食材判別、HP回復△（精神）      </td><td>HP+0.5（品質1）または+1.0（品質2）、野外可。<br/>Lv2で大量調理難易度-1。                       </td></tr>
+  <tr><td>木こり    </td><td>木材採取△（体力）              </td><td>木材採取（品質1：1単位、品質2：2単位）。Lv2で採取量+1。                                        </td></tr>
+  <tr><td>野営技術  </td><td>野営準備△（体力）              </td><td>不調軽減（品質1：-1、品質2：-2）、HP+0.25。<br/>Lv2で設営時間短縮（1時間減）。                 </td></tr>
+  <tr><td>騎獣制御  </td><td>騎乗△、調教△（機転）          </td><td>7.4.5参照。Lv2で戦闘時命中ペナルティ軽減。                                                     </td></tr>
+  <tr><td>畜産管理  </td><td>動物治療△、食料/素材採取△     </td><td>7.4.5参照。Lv2で戦闘時命中ペナルティ軽減。                                                     </td></tr>
+</table>
+
+<h4>■ 知性系</h4>
+<table class="skill-table align-table-center-1 align-table-center-2">
+  <tr><th colspan="3" class="left">芸能(知性)</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>楽器演奏  </td><td>演奏、MP回復△（精神）          </td><td>MP+0.5（品質1）または+1.0（品質2）<br/>士気：仲間MP+1。Lv2で不調：つまんない-1。               </td></tr>
+  <tr><td>語り      </td><td>口述、情報収集△（精神）        </td><td>情報収集1段階有利。Lv2で観衆規模+50%。                                                         </td></tr>
+  <tr><th colspan="3" class="left">商人</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>財務管理  </td><td>取引、会計△（知性）            </td><td>取引判定1段階有利。Lv2で割引率+10%。                                                           </td></tr>
+  <tr><td>物流管理  </td><td>物流△（知性）                  </td><td>運搬効率+10%。Lv2で運搬コスト-10%。                                                            </td></tr>
+  <tr><td>裏取引    </td><td>非合法情報収集△（知性）        </td><td>裏社会情報有利。Lv2で取引判定有利1段階追加。 </td></tr>
+  <tr><td>情報網    </td><td>情報収集△（知性）              </td><td>情報収集（1時間、詳細2時間）。Lv2で時間短縮（1時間減）。 </td></tr>
+  <tr><td>密約術    </td><td>機密取引△（知性）              </td><td>取引成功率+10%。Lv2で敵対補正軽減（+1）。 </td></tr>
+  <tr><td>取引記録  </td><td>取引整理△（知性）              </td><td>取引効率+10%。Lv2で整理時間短縮（1時間減）。 </td></tr>
+  <tr><td>交渉術    </td><td>交渉、情報収集△（知性）        </td><td>交渉/情報収集有利。Lv2で敵対補正軽減（+1）。 </td></tr>
+  <tr><th colspan="3" class="left">職人(知性)</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>応急手当  </td><td>応急処置△（知性）              </td><td>負傷🩸→🩹（2時間）。Lv2で処置時間短縮（1時間減）。 </td></tr>
+  <tr><td>機械      </td><td>道具製作、修理△（機転）        </td><td>道具修理（1時間2段階）。Lv2で製作量+1。 </td></tr>
+  <tr><td>薬調合    </td><td>薬製作△（知性）                </td><td>回復：薬効果+1。Lv2で製作時間短縮（1時間減）。 </td></tr>
+  <tr><td>裁縫      </td><td>布革製作、修理△（機転）        </td><td>布革修理（1時間2段階）。Lv2で製作量+1。 </td></tr>
+  <tr><td>診断術    </td><td>診断△（知性）                  </td><td>治療成功率+10%。Lv2で診断時間短縮（1時間減）。 </td></tr>
+  <tr><td>薬草知識  </td><td>薬草採取、調合△（知性）        </td><td>薬草採取（品質1：1単位、品質2：2単位）。Lv2で回復量+1。 </td></tr>
+  <tr><th colspan="3" class="left">頭脳労働職</th></tr>
+  <tr><th>スキル名  </th><th>判定効果                        </th><th>追加効果                                                                                       </th></tr>
+  <tr><td>暗号術    </td><td>機密処理、密約△（知性）        </td><td>解読成功率+10%（Lv2）。 </td></tr>
+  <tr><td>記録管理  </td><td>帳簿、公文書△（知性）          </td><td>整理時間短縮（Lv2）。 </td></tr>
+  <tr><td>交渉術    </td><td>交渉、値切り△（知性）          </td><td>好感度+1。Lv2で交渉成功率+10%。 </td></tr>
+  <tr><td>自然観察  </td><td>動植物知識△（知性）            </td><td>採取量+1（Lv2）。 </td></tr>
+  <tr><td>情報処理  </td><td>伝言、連絡網△（知性）          </td><td>情報収集（1時間）。Lv2で時間短縮（1時間減）。 </td></tr>
+  <tr><td>知識      </td><td>読み書き、伝承△（知性）        </td><td>教育成功率+10%。Lv2で情報入手時間短縮（1時間減）。 </td></tr>
+</table>
+
+<p class="note">※判定効果の「△」は1段階有利（Lv1）、2段階有利（Lv2）を示す。経済効果はキャラクター作成時の所持金/借金限度額に加算。追加効果は状況に応じてGMが調整可能。Lv2の効果はシナリオやバランスを考慮して適用してください。 </p>
+
+
+
+<h4>戦闘中の効果</h4>
+<ul>
+  <li><strong>水泳</strong>:
+    <p>水中移動時の移動力+1、窒息カウントの上限を+1（体力+2→体力+3）。水泳で鍛えたスタミナが陸上移動にも役立ちます。</p>
+  </li>
+  <li><strong>疾走</strong>:
+    <p>地上での戦闘移動力+1（強度 1～3 の移動距離に適用）、窒息カウントの上限を+1（体力+2→体力+3）。素早い移動を可能にします。</p>
+  </li>
+  <li><strong>跳躍</strong>:
+    <p>跳躍距離+1m、疲労蓄積値の発症閾値を+1（体力+2→体力+3）。脚力を強化します。</p>
+  </li>
+  <li><strong>登攀</strong>:
+    <p>登攀速度+1m/ラウンド、疲労蓄積値の発症閾値を+1（体力+2→体力+3）。壁や崖を登る能力を高めます。</p>
+  </li>
+</ul>
+
+<p>※生活系スキルは最大HPまたはMPを増加させ、関連する一般行為判定を1段階有利にします。具体的な効果は状況に応じてGMが適用します。種族特性を活かして効果が変化する場合があります（例: 暗視で夜間判定が有利）。</p>
+<p>※「疲労発症閾値+1」「窒息カウント+1」の効果を持つスキルを複数取得した場合、それぞれの累積効果は以下のように制限されます：
+<ul>
+  <li>1つ目で+1</li>
+  <li>2つ目で変化なし（計+1）</li>
+  <li>3つ目でさらに+1（計+2）</li>
+  <li>4つ目で変化なし（計+2）</li>
+  <li>5つ目でさらに+1（計+3）</li>
+  <li>6つ目以降は効果なし（最大+3）</li>
+</ul>
+</p>これにより、過剰な耐久力の増加を防ぎます。</p>
+<!--------------------------------------------------------------------------------------------------
+-   4.1.3 生活系スキルの取得とレベルアップ
+--------------------------------------------------------------------------------------------------->
+<h3 id="04_lifestyle_skills_levels">4.1.3 生活系スキルの取得とレベルアップ</h3>
+
+<p>生活スキルはキャラクターの職業カテゴリに応じて取得しやすく設定されていますが、職業カテゴリ外のスキルを習得することも可能です。以下のルールに従ってスキルを習得・強化してください。</p>
+<ul>
+  <li><strong>職業カテゴリ内スキルの取得</strong>：職業カテゴリ内から生活スキルを2個選んで取得します。</li>
+  <li><strong>職業カテゴリ外スキルの取得</strong>：最初に職業を選び、1枠を消費します。その後、新しく選んだ職業カテゴリからスキルを1個取得します。</li>
+  <li><strong>取得済みスキルのレベルアップ</strong>：取得済みスキルのレベルアップ（例：Lv1→Lv2）は、2枠分を消費します。レベルアップにより、判定の有利段階が増加（Lv1：1段階有利、Lv2：2段階有利）または追加効果（例：採取量+1、回復量+1）が得られます。</li>
+  <li><strong>年齢とスキル枠</strong>：成人年齢を迎えるたびに新しく生活スキルを2枠分取得します。なお、成人年齢を迎える前の特例は<a href="02_age_weight">2.4 年齢と体格による補正</a>を参照してください。</li>
+</ul>
+<!--------------------------------------------------------------------------------------------------
+-   4.2 戦闘系スキル
+--------------------------------------------------------------------------------------------------->
+<h2 id="04_combat_skills">4.2 戦闘系スキル</h2>
+<!-- @skill_mapping_rules
+{
+  "column_map": {
+    "スキル名": "name",
+    "行動": "timing",
+    "コスト": "cost",
+    "武器属性／攻撃種別": "attribute_type",
+    "効果": "effect"
+  },
+  "abbreviations": {
+    "attribute": {
+      "打": "blunt",
+      "打撃": "blunt",
+      "斬": "slash",
+      "斬撃": "slash",
+      "刺": "pierce",
+      "刺突": "pierce"
+    },
+    "type": {
+      "白": "melee",
+      "白兵": "melee",
+      "投": "thrown",
+      "投擲": "thrown",
+      "射": "ranged",
+      "射撃": "ranged"
+    },
+    "cost_keywords": {
+      "AP0": { "ap": 0 },
+      "AP1": { "ap": 1 },
+      "AP2": { "ap": 2 },
+      "AP3": { "ap": 3 },
+      "命中−2": {
+        "accuracyMod": -2,
+        "note": "Reduces the target value by 2; affects both success and critical thresholds (see critical success table)"
+      },
+      "命中−1": {
+        "accuracyMod": -1,
+        "note": "Reduces the target value by 1; affects both success and critical thresholds (see critical success table)"
+      },
+      "命中−1（会心固定）": {
+        "accuracyMod": -1,
+        "note": "Reduces the target value by 1; does not affect the critical threshold (applies only when explicitly stated)"
+      },
+      "命中+1": {
+        "accuracyMod": 1,
+        "note": "Increases the target value by 1; affects both success and critical thresholds (see critical success table)"
+      },
+      "命中+2": {
+        "accuracyMod": 2,
+        "note": "Increases the target value by 2; affects both success and critical thresholds (see critical success table)"
+      },
+      "命中▼▼": {
+        "advantage": -2,
+        "note": "Two levels of disadvantage: roll 3 dice and take the highest. Does not affect critical threshold."
+      },
+      "命中▼": {
+        "advantage": -1,
+        "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+      },
+      "命中△": {
+        "advantage": 1,
+        "note": "One level of advantage: roll 2 dice and choose freely (usually take the lower unless stated otherwise)."
+      },
+      "命中△△": {
+        "advantage": 2,
+        "note": "Two levels of advantage: roll 3 dice and choose freely (usually take the lowest unless stated otherwise)."
+      },
+      "回数1": {
+        "limit": "Once per round"
+      }
+    }
+  },
+  "notes": "This rule set defines how to convert the skill table into structured data for ChatGPT or parser tools. All abbreviations should match the human-readable skill table. Japanese full terms and abbreviations are both mapped."
+}
+-->
+
+<!-- @skill_data
+[
+  {
+    "name": "格闘",
+    "timing": "常時",
+    "attribute": [],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "最大HP+1。一部の武器が強化され、格闘スキル前提の攻撃手段が使用可能になる。詳細は後述。",
+    "note": "Maximum HP +1 at all times. Increases the effect of 'Claw Claw' from '6.2.3 Slashing Weapons.' If each weapon has a description of its effect on melee attacks, follow that. Becomes able to use 'Fists (Melee)', 'Kicks (Melee)', 'Chokeholds', and 'Throws' from '5.2.10 Race/Skill Specific Weapons'."
+  },
+  {
+    "name": "強化会心",
+    "timing": "常時",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee", "thrown", "ranged"],
+    "cost": { "raw": ["-"] },
+    "effect": "会心時の威力ダイスを1段階強化（例: d3→d4）。「切り裂き」など他の会心効果とは重複しない。",
+    "note": "Enhances the damage die by one rank on a critical hit (e.g., d3 to d4). Does not stack with other critical effects like '切り裂き'."
+  },
+  {
+    "name": "重装備",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "このスキルを持っているキャラクターは、体力による制限（装備可能な重量・スキル条件など）について、常に「体力が1点高いもの」として扱う。",
+    "note": "The character is treated as having 1 additional Stamina point for restrictions related to equipment weight or skill conditions."
+  },
+  {
+    "name": "素振り千回",
+    "timing": "常時",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "「AP2以上の攻撃」と「二刀流」の白兵判定△。",
+    "note": "Grants one level of advantage (△) when performing melee attacks that cost AP2 or more, or when using dual-wield attacks."
+  },
+  {
+    "name": "迅速換装",
+    "timing": "独立",
+    "attribute": [],
+    "type": [],
+    "cost": { "limit": "Once per round" },
+    "effect": "手番の開始時、APを消費せずに換装を行って良い。",
+    "note": "At the start of the turn, the character may swap equipment without spending AP."
+  },
+  {
+    "name": "闘気集中",
+    "timing": "独立",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": { "raw": ["MP1"] },
+    "effect": "自分の手番が終わるまで、スキルを含む白兵の命中△。『素振り千回』の効果と合わさると命中△△となる。",
+    "note": "Grants one level of advantage (△) to melee attacks, including skills, until the end of the turn. Combines with '素振り千回' for two levels of advantage (△△)."
+  },
+  {
+    "name": "薙ぎ払い",
+    "timing": "独立",
+    "attribute": ["blunt", "slash"],
+    "type": ["melee"],
+    "cost": {
+      "ap": 2,
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+    },
+    "effect": "命中-1で複数マスにダメージ（間合い2mで4マス、3mで8マス）。詳細は後述。"
+  },
+  {
+    "name": "突撃",
+    "timing": "独立",
+    "attribute": ["pierce"],
+    "type": ["melee"],
+    "cost": { "ap": 2 },
+    "effect": "直線移動で白兵攻撃、3mごと威力+1（会心2m）。加算に使える移動距離の上限は使用者の移動力まで。詳細は後述。",
+    "note": "Can be used with a thrusting weapon. The user charges in a straight line toward the target and stops in the square before the enemy. Damage increases based on movement distance (normal: +1 damage rank for every 3 meters, critical: +1 damage rank for every 2 meters, with the maximum added distance limited by the user's move speed). The movement can be enhanced by using a dash (however, the maximum distance that can be used for damage calculation is still limited by the character's move speed). This skill cannot be used if the movement path touches any obstacle corners. Elves, due to their [Tree Avoidance] trait, can ignore the corners of obstacles and move diagonally. The damage bonus from the movement is applied only to the first hit when used in conjunction with multi-hit."
+  },
+  {
+    "name": "速攻",
+    "timing": "独立",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee", "thrown"],
+    "cost": { "ap": 1, "limit": "Once per round" },
+    "effect": "白兵または投擲を行う。重量が体力の半分(端数切捨)を超える武器を使用している場合は命中▼。",
+    "note": "Performs a melee or thrown attack. If the weapon's weight exceeds half the character's Stamina (rounded down), the attack has one level of disadvantage (▼)."
+  },
+  {
+    "name": "速射",
+    "timing": "独立",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["thrown", "ranged"],
+    "cost": {
+      "ap": 1,
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold.",
+      "limit": "Once per round"
+    },
+    "effect": "投擲または射撃を行う。スキルLv2で回数制限なしとなる。",
+    "note": "Allows a ranged or thrown attack for 1 AP. The attack is performed with one level of disadvantage (▼). With skill level 2, this attack can be used without a usage limit during the turn."
+  },
+  {
+    "name": "鷹の目",
+    "timing": "独立",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["thrown", "ranged"],
+    "cost": { "raw": ["MP1"] },
+    "effect": "その手番の射撃・投擲、および刺突武器(白兵含む)の命中△。",
+    "note": "Grants one level of advantage (△) to ranged, thrown, and pierce weapon attacks (including melee) for the turn."
+  },
+  {
+    "name": "剛拳の構え",
+    "timing": "攻撃前",
+    "attribute": [],
+    "type": ["melee"],
+    "cost": {
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+    },
+    "effect": "拳と蹴りの威力を通常2段階、会心2段階強化。例：拳d(0～1)/1→d2/d3"
+  },
+  {
+    "name": "渾身の一撃",
+    "timing": "攻撃前",
+    "attribute": ["blunt", "slash"],
+    "type": ["melee", "thrown"],
+    "cost": {
+      "ap": 1,
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+    },
+    "effect": "威力が 打撃武器：2d[威力ランク]（威力ダイスを2個振る）斬撃武器：威力ダイスの最大値 となる。"
+  },
+  {
+    "name": "刺し貫き",
+    "timing": "攻撃前",
+    "attribute": ["pierce"],
+    "type": ["melee", "thrown", "ranged"],
+    "cost": {
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+    },
+    "effect": "対象の防御点を半減(端数切捨)扱いで計算できる"
+  },
+  {
+    "name": "フェイント",
+    "timing": "攻撃前",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": {
+      "advantage": -1,
+      "note": "One level of disadvantage: roll 2 dice and take the higher. Does not affect critical threshold."
+    },
+    "effect": "対象は回避▼、ガード▼。"
+  },
+  {
+    "name": "連撃",
+    "timing": "攻撃前",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "命中有利時、段階数+1回の攻撃を通常命中で行う。詳細は後述。",
+    "note": "When the attack has advantage, perform [advantage level + 1] attacks with normal accuracy. See details later."
+  },
+  {
+    "name": "打ち崩し",
+    "timing": "攻撃後",
+    "attribute": ["blunt"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "ダメージを与えた際、ダメージを1点軽減する代わりに、相手を転倒させるか相手を1マスノックバックさせてもよい。",
+    "note": "When dealing damage, reduce the damage by 1 to either knock the target prone or push them back 1 square."
+  },
+  {
+    "name": "ガードブレイク",
+    "timing": "攻撃後",
+    "attribute": ["blunt"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "ダメージを与えた際、ダメージを与えない代わりに対象の防具を消耗させる。詳細後述。",
+    "note": "When dealing damage, forgo the damage to degrade the target's armor. See details later."
+  },
+  {
+    "name": "重ね斬り",
+    "timing": "攻撃後",
+    "attribute": ["slash"],
+    "type": ["melee"],
+    "cost": { "raw": ["MP1"], "limit": "Once per round" },
+    "effect": "斬撃直後に再攻撃、回避/ガードは直前の結果を再度適用。詳細は後述。",
+    "note": "Immediately after a slash attack, perform another attack. The target's evasion or guard uses the previous roll's result. See details later."
+  },
+  {
+    "name": "切り裂き",
+    "timing": "攻撃後",
+    "attribute": ["slash"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "2点以上のダメージを与えた場合、対象に負傷ロールを行わせてもよい。",
+    "note": "When dealing 2 or more damage, the target may be forced to make a wound roll."
+  },
+  {
+    "name": "ディザーム",
+    "timing": "攻撃後",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": { "raw": ["-"] },
+    "effect": "ガードされてダメージを与えた際、ダメージを与えない代わりに、対象がガードに使用した装備を外し、外した装備をスキル使用者から遠ざかる方向に1マス移動させる。",
+    "note": "When damage is dealt but guarded, forgo the damage to disarm the target's guarding equipment, moving it 1 square away from the user."
+  },
+  {
+    "name": "二刀流",
+    "timing": "攻撃後",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee", "thrown", "ranged"],
+    "cost": { "ap": 1 },
+    "effect": "両手に装備している武器の合計重量が体力以下の時に使用。未使用の腕/足で攻撃。詳細は後述。",
+    "note": "Usable when the total weight of equipped weapons is equal to or less than Stamina. Attack with an unused arm or leg. See details later."
+  },
+  {
+    "name": "捻り突き",
+    "timing": "攻撃後",
+    "attribute": ["pierce"],
+    "type": ["melee"],
+    "cost": { "ap": 1 },
+    "effect": "ダメージを与えた際、防御点適用後のダメージを2倍にする（対象が負傷ロールを行う場合でも軽減前のダメージを2倍）。",
+    "note": "When dealing damage, double the final damage after armor reduction. For wound rolls, double the damage before reduction."
+  },
+  {
+    "name": "シフト",
+    "timing": "攻撃後",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee", "thrown", "ranged"],
+    "cost": { "raw": ["-"] },
+    "effect": "ZOCを無視して2m移動する。移動力が6m以上の場合は3m移動可能。",
+    "note": "Move 2m ignoring zones of control. If movement speed is 6m or more, move 3m instead."
+  },
+  {
+    "name": "すり抜け",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "敵ZOCの足止め効果が発生した際、通常の移動コストの2倍を支払うことで隣接マスに移動できる。",
+    "note": "When stopped by an enemy's zone of control, move to an adjacent square by paying double the normal movement cost."
+  },
+  {
+    "name": "受け身",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "落下や転倒時のダメージを1軽減。転倒からの起き上がり（AP1）がAP0で可能。",
+    "note": "Reduce damage from falling or being knocked prone by 1. Standing up from prone (normally 1 AP) costs 0 AP."
+  },
+  {
+    "name": "カウンター",
+    "timing": "判定後",
+    "attribute": ["blunt", "slash", "pierce"],
+    "type": ["melee"],
+    "cost": { "raw": ["MP1"] },
+    "effect": "回避またはガード判定で会心（出目1）が出た場合に使用可能。直後にAP0で基本白兵攻撃を1回行える。攻撃対象は直前に攻撃してきた敵に限定される。",
+    "note": "Usable when a critical success (roll of 1) is achieved on an evasion or guard check. Immediately perform a basic melee attack for 0 AP, targeting only the enemy that just attacked."
+  },
+  {
+    "name": "ディフレクト",
+    "timing": "判定前",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "攻撃を受けて防御判定を行う際に宣言する。そのダメージに対して、武器・盾の防御率+1、防御点-1。",
+    "note": "Declare before making a defense check against an attack. For that damage, increase weapon or shield defense rating by 1 and reduce defense points by 1."
+  },
+  {
+    "name": "鉄壁",
+    "timing": "判定前",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["MP1"] },
+    "effect": "防御判定前に宣言。防御点が2倍になる。",
+    "note": "Declare before a defense check. Double the defense points for that check."
+  },
+  {
+    "name": "不屈",
+    "timing": "判定後",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["MP1"] },
+    "effect": "HPが0になった時に使う。HPを1にする。",
+    "note": "Usable when HP reaches 0. Restore HP to 1."
+  },
+  {
+    "name": "見切り",
+    "timing": "判定前",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["MP1"] },
+    "effect": "回避判定前に宣言。回避判定が1段階有利になる。",
+    "note": "Declare before an evasion check. Gain one level of advantage (△) on the evasion check."
+  },
+  {
+    "name": "魔術師魔法",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "魔術師魔法が使用可能になる（スキル無し：魔術師魔法の発動率▼、消費MP+1）。Lv2: 魔術師魔法の発動率△",
+    "note": "Enables the use of mage magic (without this skill: mage magic activation rate ▼, MP cost +1). At level 2, mage magic activation rate gains one level of advantage (△)."
+  },
+  {
+    "name": "僧侶魔法",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "僧侶魔法が使用可能になる（スキル無し：僧侶魔法の発動率▼、消費MP+1）。Lv2: 僧侶魔法の発動率△",
+    "note": "Enables the use of cleric magic (without this skill: cleric magic activation rate ▼, MP cost +1). At level 2, cleric magic activation rate gains one level of advantage (△)."
+  },
+  {
+    "name": "精霊魔法",
+    "timing": "常時",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "精霊魔法が使用可能になる（スキル無し：精霊魔法の発動率▼、消費MP+1）。Lv2: 精霊魔法の発動率△",
+    "note": "Enables the use of spirit magic (without this skill: spirit magic activation rate ▼, MP cost +1). At level 2, spirit magic activation rate gains one level of advantage (△)."
+  },
+  {
+    "name": "消費軽減",
+    "timing": "発動後",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["-"] },
+    "effect": "魔法の会心発動時、効果が通常成功のものになる代わりに消費MPを半分（切り捨て）にしても良い。",
+    "note": "On a critical magic activation, the effect becomes a normal success, but the MP cost may be halved (rounded down)."
+  },
+  {
+    "name": "精神集中",
+    "timing": "MP1",
+    "attribute": [],
+    "type": [],
+    "cost": { "limit": "Once per round" },
+    "effect": "その手番の発動率△。",
+    "note": "Grants one level of advantage (△) to activation checks for the turn."
+  },
+  {
+    "name": "速唱",
+    "timing": "発動前",
+    "attribute": [],
+    "type": [],
+    "cost": { "raw": ["発動▼"], "limit": "Once per round" },
+    "effect": "Lv1呪文のAPを1下げる（最低1）。スキルLv2で回数制限なしとなる。",
+    "note": "Reduces the AP cost of level 1 spells by 1 (minimum 1). At skill level 2, this skill has no usage limit per turn."
+  },
+  {
+    "name": "戦闘教官",
+    "timing": "独立",
+    "attribute": [],
+    "type": [],
+    "cost": { "ap": 1 },
+    "effect": "習得済みのスキルを1つ指定。3m以内の模倣準備済みの味方全員に、1ラウンド中そのスキルを使用可能にする支援を行う。Lv2：AP2消費で半径12mに有効",
+    "note": "At level 1, the user may spend 1 AP to allow all allies within 3m to use one prepared mimicry skill each during the current round. At level 2, the user may spend 2 AP to extend this effect to all prepared allies within 12m. The instructor must know the skill. Mimicry usage does not consume preparation points."
+  }
+]
+-->
+<p>戦闘に特化したスキルです。以下は取得可能な戦闘系スキルの一覧です。</p>
+
+<table class="skill-combat-table align-table-center-2 align-table-center-3 align-table-center-4">
+<tr><th colspan="5" class="left">攻撃系スキル</th></tr>
+<tr><th>スキル名      </th><th>行動  </th><th>コスト                  </th><th>武器属性<br/>攻撃種別</th><th>効果</th></tr>
+<tr><td>格闘          </td><td>常時  </td><td>-                       </td><td>特殊<br/>白          </td><td>最大HP+1。一部の武器が強化され、格闘スキル前提の攻撃手段が使用可能になる。詳細は後述。</td></tr>
+<tr><td>強化会心      </td><td>常時  </td><td>-                       </td><td>打斬刺<br/>白投射    </td><td>会心時の威力ダイスを1段階強化（例: d3→d4）。「切り裂き」など他の会心効果とは重複しない。</td></tr>
+<tr><td>重装備        </td><td>常時  </td><td>-                       </td><td>-                    </td><td>このスキルを持っているキャラクターは、体力による制限（装備可能な重量・スキル条件など）について、常に「体力が1点高いもの」として扱う。</td></tr>
+<tr><td>素振り千回    </td><td>常時  </td><td>-                       </td><td>打斬刺<br/>白        </td><td>「AP2以上の攻撃」と「二刀流」の白兵判定△。</td></tr>
+<tr><td>迅速換装      </td><td>独立  </td><td>回数1                   </td><td>-                    </td><td>手番の開始時、APを消費せずに換装を行って良い。</td></tr>
+<tr><td>闘気集中      </td><td>独立  </td><td>MP1                     </td><td>打斬刺<br/>白        </td><td>自分の手番が終わるまで、スキルを含む白兵の命中△。『素振り千回』の効果と合わさると命中△△となる。</td></tr>
+<tr><td>薙ぎ払い      </td><td>独立  </td><td>AP2<br/>命中▼          </td><td>打斬<br/>白          </td><td>命中-1で複数マスにダメージ（間合い2mで4マス、3mで8マス）。詳細は後述。</td></tr>
+<tr><td>突撃          </td><td>独立  </td><td>AP2                     </td><td>刺<br/>白            </td><td>直線移動で白兵攻撃、3mごと威力+1（会心2m）。加算に使える移動距離の上限は使用者の移動力まで。詳細は後述。</td></tr>
+<tr><td>速攻          </td><td>独立  </td><td>AP1<br/>回数1           </td><td>打斬刺<br/>白投      </td><td>白兵または投擲を行う。重量が体力の半分(端数切捨)を超える武器を使用している場合は命中▼。</td></tr>
+<tr><td>速射          </td><td>独立  </td><td>AP1<br/>命中▼<br/>回数1</td><td>打斬刺</br/>投射     </td><td>投擲または射撃を行う。スキルLv2で回数制限なしとなる。</td></tr>
+<tr><td>鷹の目        </td><td>独立  </td><td>MP1                     </td><td>打斬刺</br/>投射*    </td><td>その手番の射撃・投擲、および刺突武器(白兵含む)の命中△。</td></tr>
+<tr><td>剛拳の構え    </td><td>攻撃前</td><td>命中▼                  </td><td>特殊<br/>白          </td><td>拳と蹴りの威力を通常2段階、会心2段階強化。例：拳d(0～1)/1→d2/d3</td></tr>
+<tr><td>渾身の一撃    </td><td>攻撃前</td><td>AP1   <br/>命中▼       </td><td>打斬<br/>白投        </td><td>威力が 打撃武器：2d[威力ランク]（威力ダイスを2個振る）<br/>斬撃武器：威力ダイスの最大値 となる。</td></tr>
+<tr><td>刺し貫き      </td><td>攻撃前</td><td>命中▼                  </td><td>刺<br/>白投射        </td><td>対象の防御点を半減(端数切捨)扱いで計算できる</td></tr>
+<tr><td>フェイント    </td><td>攻撃前</td><td>命中▼                  </td><td>打斬刺</br/>白       </td><td>対象は回避▼、ガード▼。</td></tr>
+<tr><td>連撃          </td><td>攻撃前</td><td>-                       </td><td>打斬刺<br/>白        </td><td>命中有利時、段階数+1回の攻撃を通常命中で行う。詳細は後述。</td></tr>
+<tr><td>打ち崩し      </td><td>攻撃後</td><td>-                       </td><td>打<br/>白            </td><td>ダメージを与えた際、ダメージを1点軽減する代わりに、相手を転倒させるか相手を1マスノックバックさせてもよい。</td></tr>
+<tr><td>ガードブレイク</td><td>攻撃後</td><td>-                       </td><td>打<br/>白            </td><td>ダメージを与えた際、ダメージを与えない代わりに対象の防具を消耗させる。詳細後述。</td></tr>
+<tr><td>重ね斬り      </td><td>攻撃後</td><td>MP1<br/>回数1           </td><td>斬<br/>白            </td><td>斬撃直後に再攻撃、回避/ガードは直前の結果を再度適用。詳細は後述。</td></tr>
+<tr><td>切り裂き      </td><td>攻撃後</td><td>-                       </td><td>斬<br/>白            </td><td>2点以上のダメージを与えた場合、対象に負傷ロールを行わせてもよい。</td></tr>
+<tr><td>ディザーム    </td><td>攻撃後</td><td>-                       </td><td>打斬刺<br/>白        </td><td>ガードされてダメージを与えた際、ダメージを与えない代わりに、対象がガードに使用した装備を外し、外した装備をスキル使用者から遠ざかる方向に1マス移動させる。</td></tr>
+<tr><td>二刀流        </td><td>攻撃後</td><td>AP1                     </td><td>打斬刺<br/>白投射    </td><td>両手に装備している武器の合計重量が体力以下の時に使用。未使用の腕/足で攻撃。詳細は後述。</td></tr>
+<tr><td>捻り突き      </td><td>攻撃後</td><td>AP1                     </td><td>刺<br/>白            </td><td>ダメージを与えた際、防御点適用後のダメージを2倍にする（対象が負傷ロールを行う場合でも軽減前のダメージを2倍）。</td></tr>
+<tr><th colspan="5" class="left">移動系スキル</th></tr>
+<tr><th>スキル名      </th><th>行動  </th><th>コスト                  </th><th>武器属性<br/>攻撃種別</th><th>効果</th></tr>
+<tr><td>シフト        </td><td>攻撃後</td><td>-                       </td><td>打斬刺<br/>白投射    </td><td>ZOCを無視して2m移動する。移動力が6m以上の場合は3m移動可能。</td></tr>
+<tr><td>すり抜け      </td><td>常時  </td><td>-                       </td><td>-                    </td><td>敵ZOCの足止め効果が発生した際、通常の移動コストの2倍を支払うことで隣接マスに移動できる。</td></tr>
+<tr><th colspan="5" class="left">防御系スキル</th></tr>
+<tr><th>スキル名      </th><th>行動  </th><th>コスト                  </th><th>武器属性<br/>攻撃種別</th><th>効果</th></tr>
+<tr><td>受け身        </td><td>常時  </td><td>-                       </td><td>-                    </td><td>落下や転倒時のダメージを1軽減。転倒からの起き上がり（AP1）がAP0で可能。</td></tr>
+<tr><td>カウンター    </td><td>判定後</td><td>MP1                     </td><td>打斬刺</br/>白       </td><td>回避またはガード判定で会心（出目1）が出た場合に使用可能。直後にAP0で基本白兵攻撃を1回行える。攻撃対象は直前に攻撃してきた敵に限定される。</td></tr>
+<tr><td>ディフレクト  </td><td>判定前</td><td>-                       </td><td>-                    </td><td>攻撃を受けて防御判定を行う際に宣言する。そのダメージに対して、武器・盾の防御率+1、防御点-1。</td></tr>
+<tr><td>鉄壁          </td><td>判定前</td><td>MP1                     </td><td>-                    </td><td>防御判定前に宣言。防御点が2倍になる。</td></tr>
+<tr><td>不屈          </td><td>判定後</td><td>MP1                     </td><td>-                    </td><td>HPが0になった時に使う。HPを1にする。</td></tr>
+<tr><td>見切り        </td><td>判定前</td><td>MP1                     </td><td>-                    </td><td>回避判定前に宣言。回避判定が1段階有利になる。</td></tr>
+<tr><th colspan="5" class="left">魔法系スキル</th></tr>
+<tr><th>スキル名      </th><th>行動  </th><th>コスト                  </th><th>武器属性<br/>攻撃種別</th><th>効果</th></tr>
+<tr><td>魔術師魔法    </td><td>常時  </td><td>-                       </td><td>-                    </td><td>魔術師魔法が使用可能になる（スキル無し：魔術師魔法の発動率▼、消費MP+1）。Lv2: 魔術師魔法の発動率△</td></tr>
+<tr><td>僧侶魔法      </td><td>常時  </td><td>-                       </td><td>-                    </td><td>僧侶魔法が使用可能になる（スキル無し：僧侶魔法の発動率▼、消費MP+1）。Lv2: 僧侶魔法の発動率△</td></tr>
+<tr><td>精霊魔法      </td><td>常時  </td><td>-                       </td><td>-                    </td><td>精霊魔法が使用可能になる（スキル無し：精霊魔法の発動率▼、消費MP+1）。Lv2: 精霊魔法の発動率△</td></tr>
+<tr><td>消費軽減      </td><td>発動後</td><td>-                       </td><td>-                    </td><td>魔法の会心発動時、効果が通常成功のものになる代わりに消費MPを半分（切り捨て）にしても良い。</td></tr>
+<tr><td>精神集中      </td><td>MP1   </td><td>回数1                   </td><td>-                    </td><td>その手番の発動率△。</td></tr>
+<tr><td>速唱          </td><td>発動前</td><td>発動▼<br/>回数1        </td><td>-                    </td><td>Lv1呪文のAPを1下げる（最低1）。スキルLv2で回数制限なしとなる。</td></tr>
+<tr><th colspan="5" class="left">その他のスキル</th></tr>
+<tr><td>戦闘教官      </td><td>独立  </td><td>AP1                     </td><td>-                    </td><td>習得済みのスキルを1つ指定。3m以内の模倣準備済みの味方全員に、1ラウンド中そのスキルを使用可能にする支援を行う。Lv2：AP2消費で半径12mに有効</td></tr>
+</table>
+<p class="note">※戦闘系スキルの補足：
+<ul>
+  <li>△=判定有利、○=有利不利なし、▼=判定不利（<a href="01_basic.html#01_success_check_critical">1.3</a>参照）。</li>
+  <li>回数1: 各手番1回（独立は手番ごと、攻撃前/後は攻撃ごと、判定前/後はダメージごと、発動前/後は魔法発動ごと）。</li>
+  <li>行動種別の「前」「後」はそれぞれ直前の判定/ダメージ/発動に適用。</li>
+  <li>白=白兵、投=投擲、射=射撃、投射=投擲または射撃。</li>
+</ul></p>
+
+<h4>格闘</h4>
+<p>以下の効果を得られる。
+<ul>
+  <li>常時、最大HP+1。</li>
+  <li>「6.2.3 斬撃武器」の「爪の鉤爪」の効果上昇。各武器に格闘にの効果の記載があればそれに従う。</li>
+  <li>「6.2.11 種族・スキル固有武器」の「拳（格闘）」「蹴り（格闘）」「締め技」「投げ技」が使用可能になる。</li>
+</ul>
+
+<h4>薙ぎ払い</h4>
+<p>斬撃または打撃武器（素手含む）で使用可。命中▼で、間合い2mなら隣接4マス（タテヨコ）、3m以上なら周囲8マスにダメージ。開始マスと回転方向（右/左）は自由で、途中で停止可（味方回避）。命中とダメージは一括算出。</p>
+
+<h4>突撃</h4>
+<p>刺突武器で使用可。対象に向かって直線的に突撃し、その後は敵の手前のマスに止まります。威力は移動距離に応じて増加し（通常: 3mごとランク+1、会心: 2mごとランク+1、上限: 移動力）、疾走と併用することで移動距離を伸ばせます（ただし、威力加算に使用できる距離の上限はキャラクターの移動力です）。移動経路が通行不能マスや障害物の角を触れる場合、移動は無効となります。エルフは【樹避け】の特性により、障害物マスの角を無視して斜め移動が可能です。</p>
+
+<h4>連撃</h4>
+<p>命中判定が1段階以上有利な場合に使用可。[有利段階数+1回]の攻撃を命中○で行う。攻撃前のスキルは連撃1打目に、攻撃後のスキルは最終打に適用。</p>
+
+<h4>ガードブレイク</h4>
+<p>ダメージを与えた際、ダメージを与えない代わりに対象の防具を消耗させる。<br/>
+①ガードされたとき：対象がガードに使用した装備の防御点を1低下させる。<br/>
+②ガードされていない時：対象の鎧の防御率を1低下させる。</p>
+
+<h4>重ね斬り</h4>
+<p>斬撃白兵直後に使用可。対象に再攻撃を行い、回避・ガードは直前の判定を適用。連撃併用時、2回目以降は対象が回避・ガード判定可。</p>
+
+<h4>二刀流</h4>
+<p>両手武器の合計重量が体力以下で使用可。白兵または投擲（速攻、速射含む）直後に、未使用の腕や足で白兵/投擲攻撃。両手武器後の蹴りも可。</p>
+
+<h4>捻り突き</h4>
+<p>1点以上のダメージ時に使用。実ダメージを2倍（防御点適用後）。連撃併用時は最終打のみ適用。負傷ロール時、軽減前ダメージを2倍。</p>
+
+<h4>戦闘教官</h4>
+<p>このスキルは、戦闘中に味方の模倣準備済みスキルを引き出すための支援スキルです。</p>
+<ul>
+  <li><strong>戦闘中（Lv1）：</strong> 半径3m以内の味方に対して、AP1で模倣スキルの支援が可能です。範囲内の模倣準備済みの味方全員に対して同時に支援できます（最大8体程度が限界ですが、位置や障害物により制限されます）。</li>
+  <li><strong>戦闘中（Lv2）：</strong> 支援範囲が半径12mに拡大し、2APを消費することで、範囲内の複数の味方に同時支援が可能になります（対象は模倣準備済みスキルを持つキャラクターに限る）。</li>
+  <li><strong>訓練時：</strong> 指導中の<strong>戦闘スキルに関する教育判定（△）</strong>を行い、その判定結果に応じて模倣スキルの蓄積点を与える。蓄積点数は<strong>成功数＝品質Lv</strong>として扱う。</li>
+
+</ul>
+<p class="flavor">「おい、昨日教えたの覚えてるか？ 今だ、やれ！」<br>その一言で、仲間の刃が昨日よりも鋭くなる。</p>
+<!--------------------------------------------------------------------------------------------------
+-   4.3 種族特性スキル
+--------------------------------------------------------------------------------------------------->
+<h2 id="04_species_skills">4.3 種族特性スキル</h2>
+<p>この節では、複数の種族に共通する特性や身体的な特徴について説明します。これらの特性は、スキルのように成長ポイントを消費して取得するものではなく、<strong>種族に応じて初期状態で自動的に付与</strong>されるものです。</p>
+<p>いずれの共通種族特性も、単なるメリットではなく、<strong>現実の生理構造に基づいたデメリットや制約</strong>を伴います。そのため、<strong>後天的に取得することはできず</strong>、初期作成時にスキル数が減るといったペナルティも発生しません。</p>
+
+<h3>■ 低光量視</h3>
+<p>月明かりや焚火のような弱い光源でも周囲を視認できる視覚能力です。暗所行動での明確な利点があります。</p>
+<ul>
+  <li><strong>メリット：</strong> 暗所でも視認ペナルティを受けずに行動できます。</li>
+  <li><strong>デメリット：</strong> 桿体細胞中心の視覚であるため、<strong>色彩識別に難があり、鑑定・採取・調合などの判定に▼（1段階不利）</strong>を受けます。また、<strong>静止した対象の検知にはやや不向き</strong>です（処理は現在未導入）。</li>
+</ul>
+
+<h3>■ 低速飛行</h3>
+<p>昆虫の羽などによる飛行能力です。飛行中も腕を使って道具を操作できます。</p>
+<ul>
+  <li><strong>メリット：</strong> 飛行中も<strong>両手が使える</strong>（攻撃、魔法、道具使用など）</li>
+  <li><strong>デメリット：</strong> 高速飛行に比べて<strong>移動速度が遅い</strong>。さらに、羽毛・繊毛などの構造により、共通して<strong>「火に弱い」</strong>特性を持ちます。</li>
+</ul>
+
+<h3>■ 高速飛行</h3>
+<p>鳥類型の翼による飛行能力です。長距離・高速の空中移動に適します。</p>
+<ul>
+  <li><strong>メリット：</strong> 飛行移動の速度が速く、長距離移動力も高くなります。</li>
+  <li><strong>デメリット：</strong> 飛行中は<strong>腕が翼と一体化しているため手が使えません</strong>。また、羽毛構造により<strong>「火に弱い」</strong>特性を共通して持ちます。</li>
+</ul>
+
+<h3>■ 小柄</h3>
+<p>身体が小さい種族の特徴で、狭所での行動や隠密性に影響します。</p>
+<ul>
+  <li><strong>メリット：</strong> 若干被弾しにくく、狭い地形での行動がしやすくなります。</li>
+  <li><strong>デメリット：</strong> <strong>盾・両手武器・両用武器の必要体力が+1</strong>されます（両用武器の片手使用時も含む）。</li>
+</ul>
+
+<h3>■ 火に弱い</h3>
+<p>羽毛や繊毛などを持つ種族は、火属性の攻撃に対して特に脆弱です。</p>
+<ul>
+  <li><strong>効果：</strong> 火属性のダメージを受けるとき、<strong>被ダメージに+1</strong>の補正を受けます。</li>
+  <li><strong>適用順：</strong> この補正は、<strong>回避成功によるダメージ半減や、防御点による軽減の前に適用</strong>されます。</li>
+</ul>
+<p class="note">
+  ※この特性は、体表に羽毛・繊毛・翅などを持つ種族に自動的に付与されます。<br/>
+  ※<strong>ドライアド</strong>はこの特性を持ちません。植物と聞くと「火に弱い」イメージがあるかもしれませんが、実際には生木は燃えにくいものです。</strong></p>
+<!--------------------------------------------------------------------------------------------------
+-   4.4 模倣準備済みスキル
+--------------------------------------------------------------------------------------------------->
+<h3 id="04_mimicry_skills">4.4 模倣準備済みスキル</h3>
+<p><strong>模倣準備済みスキル</strong>は、キャラクターが正式に習得していない生活系スキルや戦闘系スキルを、事前の準備と特定条件下で一時的に使用できる仕組みです。このルールにより、スキル枠やコストを消費せずに多様なスキルを試すことができ、将来のビルド選択や柔軟なプレイスタイルをサポートします。</p>
+
+<p>模倣スキルの使用には、<strong>蓄積点数の準備</strong>と以下のいずれかの条件が必要です：</p>
+<ul>
+  <li><strong>支援：</strong> スキル保持者からの支援（戦闘中：AP1消費、戦闘外：声が届く範囲で支援）。</li>
+  <li><strong>MP支払い：</strong> 熟達したスキル（蓄積点数20以上または50以上）で、MP1を支払い、支援なしで使用。</li>
+</ul>
+
+<p class="note">模倣は一時的な利用を目的とし、スキルの常時使用や成長効果は得られません。</p>
+
+<h4>■ 蓄積方法</h4>
+<p>模倣スキルの蓄積点数は、キャラクターの知性ボーナスと訓練方法に応じて異なります。以下の表に基づき蓄積してください。蓄積はスキル名ごとに記録します。</p>
+
+<h5>知性ボーナスごとの蓄積効率</h5>
+<table class="align-table-center-2 align-table-center-3 align-table-center-4 align-table-center-5">
+  <tr><th>方法                                                     </th><th>知性0     </th><th>知性1     </th><th>知性2      </th><th>知性3      </th></tr>
+  <tr><td><strong>訓練</strong>：スキル保持者から教わる            </td><td>2時間で1点</td><td>1時間で1点</td><td>1時間でd2点</td><td>1時間でd3点</td></tr>
+  <tr><td><strong>自習</strong>：過去に蓄積したスキルを独力で鍛える</td><td>4時間で1点</td><td>2時間で1点</td><td>2時間でd2点</td><td>2時間でd3点</td></tr>
+  <tr><td><strong>独学</strong>：未習得スキルを試行錯誤            </td><td>8時間で1点</td><td>4時間で1点</td><td>4時間でd2点</td><td>4時間でd3点</td></tr>
+</table>
+<p class="note">独学は蓄積値0のスキルにのみ使用し、その後は自習に切り替わります。</p>
+
+<h4>■ 使用条件</h4>
+<p>模倣スキルの使用には、以下の条件を満たす必要があります：</p>
+<ul>
+  <li><strong>戦闘外の通常模倣：</strong><br/> 蓄積点数2点以上。声が届く範囲のスキル保持者から支援を受け使用。支援中は範囲内にいる必要がある。使用すると1時間ごとに蓄積点数+1。</li>
+  <li><strong>戦闘中の通常模倣：</strong><br/> 蓄積点数1点以上。6m以内のスキル保持者から支援を受け使用。支援者はAP1を消費。</li>
+  <li><strong>熟達による自己使用：</strong><br/> 生活系スキル蓄積50点または戦闘系スキル蓄積20点以上。MP1を支払い支援なしでその手番中使用可能。</li>
+</ul>
+
+<h4>■ 蓄積と忘却</h4>
+<ul>
+  <li><strong>ゲーム内の1日が経過するごとに、各スキルの蓄積点数が1点ずつ減少</strong>していきます（休憩・睡眠・日付変更などで日数がカウントされます）。</li>
+  <li><strong>セッションがまたがる場合でも、ゲーム内時間が連続していれば蓄積は継続します</strong>。ただし、<strong>他のGMのセッションなど、ゲーム内時間として連続性のないプレイに持ち込む場合は、原則として蓄積値はリセット</strong>されます。</li>
+  <li>蓄積が0点になったスキルは<strong>忘れた扱いとなり、キャラクターシートから削除</strong>します。</li>
+</ul>
+<!--#FOOTER_START-->
+</body>
+</html>
